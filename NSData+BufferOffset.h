@@ -12,4 +12,9 @@
 
 - (int)getBytes:(char *)buf size:(size_t)size offset:(off_t)offset;
 
+- (int)readToBuffer:(char *)buffer 
+               size:(size_t)size 
+             offset:(off_t)offset 
+              error:(NSError **)error;
+
 @end

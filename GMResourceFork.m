@@ -74,6 +74,15 @@ typedef struct {
 
 @implementation GMResource
 
++ (GMResource *)resourceWithType:(ResType)resType
+                           resID:(ResID)resID
+                            name:(NSString *)name  // May be nil
+                            data:(NSData *)data {
+  return [[[GMResource alloc] 
+           initWithType:resType resID:resID name:name data:data] autorelease];
+}
+
+
 - (id)initWithType:(ResType)resType
              resID:(ResID)resID 
               name:(NSString *)name
@@ -110,6 +119,10 @@ typedef struct {
 
 @implementation GMResourceFork
 
++ (GMResourceFork *)resourceFork {
+  return [[[GMResourceFork alloc] init] autorelease];
+}
+
 - (id)init {
   if ((self = [super init])) {
     resourcesByType_ = [[NSMutableDictionary alloc] init];
@@ -123,6 +136,17 @@ typedef struct {
 }
 
 // Add a new resource.
+- (void)addResourceWithType:(ResType)resType
+                      resID:(ResID)resID
+                       name:(NSString *)name
+                       data:(NSData *)data {
+  GMResource* resource = [GMResource resourceWithType:resType
+                                                resID:resID
+                                                 name:name
+                                                 data:data];
+  [self addResource:resource];
+}
+
 - (void)addResource:(GMResource *)resource {
   ResType type = [resource resType];
   NSNumber* key = [NSNumber numberWithLong:type];

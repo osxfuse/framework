@@ -32,6 +32,11 @@ typedef struct {
 
 @implementation GMAppleDoubleEntry
 
++ (GMAppleDoubleEntry *)entryWithID:(UInt32)entryID data:(NSData *)data {
+  return [[[GMAppleDoubleEntry alloc] 
+           initWithEntryID:entryID data:data] autorelease];
+}
+
 - (id)initWithEntryID:(UInt32)entryID
                  data:(NSData *)data {
   if ((self = [super init])) {
@@ -57,6 +62,10 @@ typedef struct {
 
 @implementation GMAppleDouble
 
++ (GMAppleDouble *)appleDouble {
+  return [[[GMAppleDouble alloc] init] autorelease];
+}
+
 - (id)init {
   if ((self = [super init])) {
     entries_ = [[NSMutableArray alloc] init];
@@ -70,9 +79,7 @@ typedef struct {
 }
 
 - (void)addEntryWithID:(GMAppleDoubleEntryID)entryID data:(NSData *)data {
-  GMAppleDoubleEntry* entry = 
-    [[[GMAppleDoubleEntry alloc] initWithEntryID:entryID data:data] autorelease];
-  [entries_ addObject:entry];
+  [entries_ addObject:[GMAppleDoubleEntry entryWithID:entryID data:data]];
 }
 
 - (NSData *)data {

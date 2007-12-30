@@ -44,6 +44,9 @@ typedef enum {
 @interface GMAppleDouble : NSObject {  
   NSMutableArray* entries_;
 }
+
++ (GMAppleDouble *)appleDouble;
+
 - (id)init;
 - (void)dealloc;
 

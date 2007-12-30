@@ -80,6 +80,20 @@
 
 @end
 
+@interface NSObject (UserFileSystemHandleOperations)
+
+- (int)readToBuffer:(char *)buffer 
+               size:(size_t)size 
+             offset:(off_t)offset 
+              error:(NSError **)error;
+
+- (int)writeFromBuffer:(const char *)buffer 
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
+
+@end
+
 @interface NSObject (UserFileSystemOperations)
 
 #pragma mark Moving an Item
