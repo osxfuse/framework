@@ -37,7 +37,6 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 
 + (UserFileSystem *)currentFS;
 
-- (NSArray *)fullDirectoryContentsAtPath:(NSString *)path;
 - (void)mount:(NSDictionary *)args;
 
 // Determines whether the given path is a for a resource managed by 
@@ -127,7 +126,9 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 }
 
 - (void)umount {
-  //  [self fuseWillUnmount];
+  if ([delegate_ respondsToSelector:@selector(willUmount)]) {
+    [delegate_ willUmount];
+  }
   NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
   NSTask *unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
                                                  arguments:args];
@@ -146,12 +147,19 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 
 - (void)fuseInit {    
   isMounted_ = YES;
-  //  [self fuseDidMount];
+  
+  // TODO: The mount point won't actually show up until this winds its way
+  // back through the kernel after this routine returns.
+  if ([delegate_ respondsToSelector:@selector(didMount)]) {
+    [delegate_ didMount]; 
+  }
 }
 
 - (void)fuseDestroy {
   isMounted_ = NO;
-  //  [self fuseDidUnmount];
+  if ([delegate_ respondsToSelector:@selector(didUmount)]) {
+    [delegate_ didUmount];
+  }
 }
 
 #pragma mark Resource Forks and HFS headers
@@ -183,7 +191,7 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
     GMResource* r = nil;
     if (imageData) {
       r = [[[GMResource alloc] initWithType:'icns'
-                                      resID:-16455
+                                      resID:kCustomIconResource // -16455
                                        name:nil
                                        data:imageData] autorelease];
       [s addResource:r];
@@ -449,34 +457,6 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
                            flags:flags];
 }
 
-// Directory contents with invisible resources added
-- (NSArray *)fullDirectoryContentsAtPath:(NSString *)path error:(NSError **)error {
-  NSArray *contents = [self contentsOfDirectoryAtPath:path error:error];
-  if (contents == nil) {
-    return nil;
-  }
-  
-  NSMutableArray *fullContents = [NSMutableArray array];
-  [fullContents addObject:@"."];
-  [fullContents addObject:@".."];
-  [fullContents addObjectsFromArray:contents];
-  
-  if ([self usesResourceForks]) {
-    for (int i = 0, count = [contents count]; i < count; i++) {
-    NSString *childPath = [contents objectAtIndex:i];
-      if ([self pathHasResourceFork:[path stringByAppendingPathComponent:childPath]]) {
-        [fullContents addObject:[@"._" stringByAppendingString:childPath]];
-      }
-    }
-    
-    if ([self iconDataForPath:path]) {
-        [fullContents addObject:@"Icon\r"];
-        [fullContents addObject:@"._Icon\r"];
-    }
-  }
-  return fullContents;
-}
-
 #pragma mark Moving an Item
 
 - (BOOL)moveItemAtPath:(NSString *)source 
@@ -671,12 +651,45 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
   return YES; 
 }
 
-- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
-    return [delegate_ contentsOfDirectoryAtPath:path error:error];
+- (BOOL)hasCustomIconAtPath:(NSString *)path {
+  if ([delegate_ respondsToSelector:@selector(finderFlagsForPath:)]) {
+    UInt16 flags = [delegate_ finderFlagsForPath:path];
+    if (flags & kHasCustomIcon) {
+      return YES;
+    }
+  } else if ([delegate_ respondsToSelector:@selector(iconDataForPath:)]) {
+    return [delegate_ iconDataForPath:path] != nil;
   }
-  *error = [UserFileSystem errorWithCode:ENOENT];
-  return nil;
+  return NO;
+}
+
+- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
+  *error = nil;
+  NSArray* contents = nil;
+  if ([delegate_ respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
+    contents = [delegate_ contentsOfDirectoryAtPath:path error:error];
+  } else if ([path isEqualToString:@"/"]) {
+    contents = [NSArray array];
+  }
+  if (!contents) {
+    if (*error == nil) {
+      *error = [UserFileSystem errorWithCode:ENOENT];
+    }
+    return nil;
+  }
+  
+  NSMutableArray *fullContents = [NSMutableArray array];
+  [fullContents addObject:@"."];
+  [fullContents addObject:@".."];
+  [fullContents addObjectsFromArray:contents];
+  
+  // TODO: Check if we actually need to list this in the dir or if Finder can
+  // find it for us.
+  if ([self hasCustomIconAtPath:path]) {
+      [fullContents addObject:@"Icon\r"];      
+  }
+
+  return fullContents;
 }
 
 #pragma mark Getting and Setting Attributes
@@ -848,8 +861,9 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   NSError* error = nil;
   UserFileSystem* fs = [UserFileSystem currentFS];
-  NSArray *contents = [fs fullDirectoryContentsAtPath:[NSString stringWithUTF8String:path] 
-                                                error:&error];
+  NSArray *contents = 
+  [fs contentsOfDirectoryAtPath:[NSString stringWithUTF8String:path] 
+                          error:&error];
   if (contents) {
     res = 0;
     for (int i = 0, count = [contents count]; i < count; i++) {
@@ -1356,7 +1370,9 @@ static struct fuse_operations fusefm_oper = {
     NSString* argument = [arguments objectAtIndex:i];
     argv[i] = strdup([argument UTF8String]);  // We'll just leak this for now.
   }
-//  [self fuseWillMount];
+  if ([delegate_ respondsToSelector:@selector(willMount)]) {
+    [delegate_ willMount];
+  }
   [pool release];
   fuse_main(argc, (char **)argv, &fusefm_oper, self);
 }

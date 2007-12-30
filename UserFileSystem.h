@@ -13,7 +13,7 @@
 // - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
 //                                  error:(NSError **)error;
 // - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
-//    error:(NSError **)error;
+//                                    error:(NSError **)error;
 // - (NSData *)contentsAtPath:(NSString *)path;
 
 #import <Foundation/Foundation.h>
@@ -56,6 +56,8 @@
 @end
 
 @interface NSObject (UserFileSystemLifecycle)
+
+// TODO: Maybe I should use NSNotificationCenter instead?
 
 - (void)willMount;
 - (void)didMount;

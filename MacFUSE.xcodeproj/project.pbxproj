@@ -161,7 +161,7 @@
 			dependencies = (
 			);
 			name = MacFUSE;
-			productInstallPath = "$(HOME)/Library/Frameworks";
+			productInstallPath = /Library/Frameworks;
 			productName = MacFUSE;
 			productReference = 8DC2EF5B0486A6940098B216 /* MacFUSE.framework */;
 			productType = "com.apple.product-type.framework";
@@ -236,7 +236,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
-				INSTALL_PATH = "@executable_path/../Frameworks";
+				INSTALL_PATH = /Library/Frameworks;
 				PRODUCT_NAME = MacFUSE;
 				WRAPPER_EXTENSION = framework;
 				ZERO_LINK = YES;
@@ -254,7 +254,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
-				INSTALL_PATH = "@executable_path/../Frameworks";
+				INSTALL_PATH = /Library/Frameworks;
 				PRODUCT_NAME = MacFUSE;
 				WRAPPER_EXTENSION = framework;
 			};
@@ -263,8 +263,10 @@
 		1DEB91B208733DA50010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
@@ -286,8 +288,10 @@
 					ppc,
 					i386,
 				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
@@ -312,7 +316,7 @@
 				1DEB91AF08733DA50010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "MacFUSE" */ = {
 			isa = XCConfigurationList;
@@ -321,7 +325,7 @@
 				1DEB91B308733DA50010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
