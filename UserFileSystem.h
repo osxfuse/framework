@@ -5,17 +5,6 @@
 //  Based on FUSEFileSystem originally by alcor.
 //  Copyright 2007 Google. All rights reserved.
 //
-
-// In order to create the most minimal read-only filesystem possible then your
-// delegate must implement at least the following four methods (declared below):
-//
-// - (BOOL)fileExistsAtPath:(NSString *)path isDirectory:(BOOL *)isDirectory;
-// - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
-//                                  error:(NSError **)error;
-// - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
-//                                    error:(NSError **)error;
-// - (NSData *)contentsAtPath:(NSString *)path;
-
 #import <Foundation/Foundation.h>
 
 @interface UserFileSystem : NSObject {
@@ -34,19 +23,27 @@
 // Mount the filesystem at the given path. The set of available options can
 // be found at:  http://code.google.com/p/macfuse/wiki/OPTIONS
 // For example, to turn on debug output add @"debug" to the options NSArray.
+// If the mount fails, a kUserFileSystemMountFailed notification will be posted
+// to the default notification center. See Notifications below.
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options;
 
-// Advanced mount call. A command-line daemon might want to set foreground to NO
-// and not detach a new thread. Otherwise it is typically better to call the
-// simpler mountAtPath which will use the default values.
+// Advanced mount call. You can use this to mount from a command-line program
+// as follows:
+//  For an app, use: shouldForeground=YES, detachNewThread=YES
+//  For a daemon: shouldForeground=NO, detachNewThread=NO
+//  For debug output: shouldForeground=YES, detachNewThread=NO
+//  For a daemon+runloop:  shouldForeground=NO, detachNewThread=YES
+//    - NOTE: I've never tried daemon+runloop; maybe it doesn't make sense?
+// If the mount fails, a kUserFileSystemMountFailed notification will be posted 
+// to the default notification center. See Notifications below.
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options
    shouldForeground:(BOOL)shouldForeground     // Recommend: YES
     detachNewThread:(BOOL)detachNewThread;     // Recommend: YES
 
 // Unmount the filesystem.
-- (void)umount;
+- (void)unmount;
 
 // Convenience method to creates an autoreleased NSError in the 
 // NSPOSIXErrorDomain. Filesystem errors returned by the delegate must be
@@ -55,15 +52,67 @@
 
 @end
 
+#pragma mark Notifications
+
+// Notifications
+//
+// The UserFileSystem will post lifecycle notifications to the defaultCenter.
+// Since the underlying UserFileSystem implementation is multi-threaded, you 
+// should assume that notifications will not be posted on the main thread. The
+// object will always be the UserFileSystem* and the userInfo will always
+// contain at least the following:
+//   @"mountPath" -> NSString* that is the mount path
+
+// Notification sent when the mountAtPath operation fails. The userInfo will
+// contain an @"error" key with an NSError*.
+extern NSString* const kUserFileSystemMountFailed;
+
+// Notification sent after the filesystem is successfully mounted.
+extern NSString* const kUserFileSystemDidMount;
+
+// Notification sent after the filesystem is successfully unmounted.
+extern NSString* const kUserFileSystemDidUnmount;
+
+#pragma mark -
+
+#pragma mark FileSystemHandle Delegate Protocols
+
+// For UserFileSystemOperations that return a Handle, the handle may implement
+// all or part of the UserFileSystemhandleOperations protocol.
+
+@interface NSObject (UserFileSystemHandleOperations)
+
+- (int)readToBuffer:(char *)buffer 
+               size:(size_t)size 
+             offset:(off_t)offset 
+              error:(NSError **)error;
+
+- (int)writeFromBuffer:(const char *)buffer 
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
+
+@end
+
+#pragma mark Delegate Protocols
+
+// The UserFileSystem's delegate can implement any of the below protocols.
+//
+// In order to create the most minimal read-only filesystem possible then your
+// delegate should implement the following four methods UserFileSystmOperations
+// methods (declared below):
+//
+// - (BOOL)fileExistsAtPath:(NSString *)path isDirectory:(BOOL *)isDirectory;
+// - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
+//                                  error:(NSError **)error;
+// - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
+//                                    error:(NSError **)error;
+// - (NSData *)contentsAtPath:(NSString *)path;
+
 @interface NSObject (UserFileSystemLifecycle)
 
-// TODO: Maybe I should use NSNotificationCenter instead?
-
 - (void)willMount;
-- (void)didMount;
-
-- (void)willUmount;
-- (void)didUmount;
+- (void)willUnmount;
 
 @end
 
@@ -77,20 +126,6 @@
 
 // The url for the .webloc file at path. This is only called for .webloc files.
 - (NSURL *)URLContentOfWeblocAtPath:(NSString *)path;
-
-@end
-
-@interface NSObject (UserFileSystemHandleOperations)
-
-- (int)readToBuffer:(char *)buffer 
-               size:(size_t)size 
-             offset:(off_t)offset 
-              error:(NSError **)error;
-
-- (int)writeFromBuffer:(const char *)buffer 
-                  size:(size_t)size 
-                offset:(off_t)offset
-                 error:(NSError **)error;
 
 @end
 
@@ -195,4 +230,3 @@
                        error:(NSError **)error;
 
 @end
-

@@ -29,6 +29,11 @@
 #define kFinderInfoXAttr   @"com.apple.FinderInfo"
 #define kResourceForkXattr @"com.apple.ResourceFork"
 
+// Notifications
+NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
+NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
+NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
+
 @interface UserFileSystem (UserFileSystemPrivate)
 
 + (UserFileSystem *)currentFS;
@@ -108,14 +113,13 @@
   }
 }
 
-- (void)umount {
-  if ([delegate_ respondsToSelector:@selector(willUmount)]) {
-    [delegate_ willUmount];
+- (void)unmount {
+  if (isMounted_) {
+    NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
+    NSTask *unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
+                                                   arguments:args];
+    [unmountTask waitUntilExit];
   }
-  NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
-  NSTask *unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
-                                                 arguments:args];
-  [unmountTask waitUntilExit];
 }
 
 + (NSError *)errorWithCode:(int)code {
@@ -128,21 +132,66 @@
   return (UserFileSystem *)context->private_data;
 }
 
+
+#include <sys/ioctl.h>
+
+#define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2, u_int32_t)
+extern int fuse_chan_fd_np();
+static const int kMaxWaitForMountTries = 50;
+static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
+- (void)waitUntilMounted {
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  
+  for (int i = 0; i < kMaxWaitForMountTries; ++i) {
+    UInt32 handShakeComplete = 0;
+    int ret = ioctl(fuse_chan_fd_np(), 
+                    FUSEDEVIOCGETHANDSHAKECOMPLETE, 
+                    &handShakeComplete);
+    if (ret == 0 && handShakeComplete) {
+      // Successfully mounted, so post notification.
+      NSDictionary* userInfo = 
+        [NSDictionary dictionaryWithObjectsAndKeys:
+         mountPath_, @"mountPath",
+         nil, nil];
+      NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+      [center postNotificationName:kUserFileSystemDidMount object:self
+                          userInfo:userInfo];
+      [pool release];
+      return;
+    }
+    usleep(kWaitForMountUSleepInterval);
+  }
+  
+  // Tried for a long time and no luck :-(
+  // TODO: Umount and report failure?
+  [pool release];
+}
+
 - (void)fuseInit {    
   isMounted_ = YES;
-  
-  // TODO: The mount point won't actually show up until this winds its way
-  // back through the kernel after this routine returns.
-  if ([delegate_ respondsToSelector:@selector(didMount)]) {
-    [delegate_ didMount]; 
-  }
+
+  // The mount point won't actually show up until this winds its way
+  // back through the kernel after this routine returns. In order to post
+  // the kUserFileSystemDidMount notification we start a new thread that will
+  // poll until it is mounted.
+  [NSThread detachNewThreadSelector:@selector(waitUntilMounted) 
+                           toTarget:self 
+                         withObject:nil];
 }
 
 - (void)fuseDestroy {
-  isMounted_ = NO;
-  if ([delegate_ respondsToSelector:@selector(didUmount)]) {
-    [delegate_ didUmount];
+  if ([delegate_ respondsToSelector:@selector(willUnmount)]) {
+    [delegate_ willUnmount];
   }
+  isMounted_ = NO;
+
+  NSDictionary* userInfo = 
+    [NSDictionary dictionaryWithObjectsAndKeys:
+     mountPath_, @"mountPath",
+     nil, nil];
+  NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+  [center postNotificationName:kUserFileSystemDidUnmount object:self
+                      userInfo:userInfo];
 }
 
 #pragma mark Finder Info, Resource Forks and HFS headers
@@ -663,7 +712,7 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
   if ([delegate_ respondsToSelector:@selector(attributesOfFileSystemForPath:error:)]) {
     *error = nil;
     NSDictionary* customAttribs = 
-      [delegate_ attributesOfItemAtPath:dataPath error:error];    
+      [delegate_ attributesOfItemAtPath:dataPath error:error];
     if (!customAttribs) {
       if (!(*error)) {
         *error = [UserFileSystem errorWithCode:ENOENT];
