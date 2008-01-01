@@ -126,7 +126,7 @@ typedef enum {
 - (void)unmount {
   if (status_ == UserFileSystem_MOUNTED) {
     NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
-    NSTask *unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
+    NSTask* unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
                                                    arguments:args];
     [unmountTask waitUntilExit];
   }
@@ -147,7 +147,7 @@ extern int fuse_chan_fd_np();
 static const int kMaxWaitForMountTries = 50;
 static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (void)waitUntilMounted {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   
   for (int i = 0; i < kMaxWaitForMountTries; ++i) {
     UInt32 handShakeComplete = 0;
@@ -579,7 +579,7 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
                  error:(NSError **)error {
   // First see if it is an AppleDouble or Icon\r file that we handle.
   *outHandle = [self managedContentsForPath:path];
-  if ( *outHandle != nil) {
+  if (*outHandle != nil) {
     return YES;
   }
 
@@ -672,32 +672,21 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 }
 
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
-  *error = nil;
   NSArray* contents = nil;
   if ([delegate_ respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
     contents = [delegate_ contentsOfDirectoryAtPath:path error:error];
   } else if ([path isEqualToString:@"/"]) {
-    contents = [NSArray array];
+    contents = [NSArray array];  // Give them an empty root directory for free.
   }
-  if (!contents) {
-    if (*error == nil) {
-      *error = [UserFileSystem errorWithCode:ENOENT];
-    }
-    return nil;
+  if (contents != nil && [self hasCustomIconAtPath:path]) {
+    // TODO: Check if we actually need to list this in the dir or if Finder can
+    // find it for us.
+    NSMutableArray *fullContents = [NSMutableArray arrayWithArray:contents];
+    [fullContents addObjectsFromArray:contents];
+    [fullContents addObject:@"Icon\r"];
+    contents = fullContents;
   }
-  
-  NSMutableArray *fullContents = [NSMutableArray array];
-  [fullContents addObject:@"."];
-  [fullContents addObject:@".."];
-  [fullContents addObjectsFromArray:contents];
-  
-  // TODO: Check if we actually need to list this in the dir or if Finder can
-  // find it for us.
-  if ([self hasCustomIconAtPath:path]) {
-    [fullContents addObject:@"Icon\r"];      
-  }
-
-  return fullContents;
+  return contents;
 }
 
 #pragma mark Getting and Setting Attributes
@@ -833,42 +822,50 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 
 #pragma mark FUSE Operations
 
+#define MAYBE_USE_ERROR(var, error)                                       \
+  if ((error) != nil &&                                                   \
+      [[(error) domain] isEqualToString:@"NSPosixErrorDomain"]) {         \
+    (var) = [error code];                                                 \
+  }
+
 static int fusefm_statfs(const char* path, struct statvfs* stbuf) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -ENOENT;
-  memset(stbuf, 0, sizeof(struct statvfs));
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs fillStatvfsBuffer:stbuf 
-                    forPath:[NSString stringWithUTF8String:path]
-                      error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;
+  @try {
+    memset(stbuf, 0, sizeof(struct statvfs));
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs fillStatvfsBuffer:stbuf 
+                      forPath:[NSString stringWithUTF8String:path]
+                        error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_getattr(const char *path, struct stat *stbuf) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -ENOENT;
-  memset(stbuf, 0, sizeof(struct stat));
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs fillStatBuffer:stbuf 
-                 forPath:[NSString stringWithUTF8String:path]
-                   error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;
+  @try {
+    memset(stbuf, 0, sizeof(struct stat));
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs fillStatBuffer:stbuf 
+                   forPath:[NSString stringWithUTF8String:path]
+                     error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
@@ -878,31 +875,35 @@ static int fusefm_fgetattr(const char *path, struct stat *stbuf, struct fuse_fil
 
 static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                           off_t offset, struct fuse_file_info *fi) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -ENOENT;
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;
 
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  NSArray *contents = 
-  [fs contentsOfDirectoryAtPath:[NSString stringWithUTF8String:path] 
-                          error:&error];
-  if (contents) {
-    res = 0;
-    for (int i = 0, count = [contents count]; i < count; i++) {
-      filler(buf, [[contents objectAtIndex:i] UTF8String], NULL, 0);
-    }
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    NSArray *contents = 
+    [fs contentsOfDirectoryAtPath:[NSString stringWithUTF8String:path] 
+                            error:&error];
+    if (contents) {
+      ret = 0;
+      filler(buf, ".", NULL, 0);
+      filler(buf, "..", NULL, 0);
+      for (int i = 0, count = [contents count]; i < count; i++) {
+        filler(buf, [[contents objectAtIndex:i] UTF8String], NULL, 0);
+      }
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* fi) {
-  int res = -EACCES;
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -EACCES;
+  
   @try {
     NSError* error = nil;
     id object = nil;
@@ -913,26 +914,24 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
                   attributes:attribs
                    outHandle:&object
                        error:&error]) {
-      res = 0;
+      ret = 0;
       if (object != nil) {
         fi->fh = (uint64_t)(int)[object retain];
       }
     } else {
-      if (error != nil) {
-        res = -[error code];
-      }
+      MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException * e) {
-  }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_open(const char *path, struct fuse_file_info *fi) {
-  int res = -ENOENT;  // TODO: Default to 0 (success) since a file-system does
-                      // not necessarily need to implement open.
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;  // TODO: Default to 0 (success) since a file-system does
+                      // not necessarily need to implement open?
+
   @try {
     id object = nil;
     NSError* error = nil;
@@ -941,53 +940,54 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
                       mode:fi->flags
                  outHandle:&object
                      error:&error]) {
-      res = 0;
+      ret = 0;
       if (object != nil) {
         fi->fh = (uint64_t)(int)[object retain];
       }
     } else {
-      if (error != nil) {
-        res = -[error code];
-      }
+      MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException * e) {
-  }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 
 static int fusefm_release(const char *path, struct fuse_file_info *fi) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  id object = (id)(int)fi->fh;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  [fs releaseFileAtPath:[NSString stringWithUTF8String:path] handle:object];
-  if (object) {
-    [object release]; 
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  @try {
+    id object = (id)(int)fi->fh;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] handle:object];
+    if (object) {
+      [object release]; 
+    }
   }
+  @catch (NSException* e) { }
   [pool release];
   return 0;
 }
 
 static int fusefm_truncate(const char* path, off_t offset) {
-  int res = -ENOTSUP;
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
-                      offset:offset
-                       error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  int ret = -ENOTSUP;
+  
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
+                        offset:offset
+                         error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_ftruncate(const char* path, off_t offset, struct fuse_file_info *fh) {
@@ -995,145 +995,150 @@ static int fusefm_ftruncate(const char* path, off_t offset, struct fuse_file_inf
 }
 
 static int fusefm_chown(const char* path, uid_t uid, gid_t gid) {
-  int res = 0;  // Return success by default.
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-  NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-  [attribs setObject:[NSNumber numberWithLong:uid] forKey:NSFileOwnerAccountID];
-  [attribs setObject:[NSNumber numberWithLong:gid] forKey:NSFileGroupOwnerAccountID];
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs setAttributes:attribs 
-           ofItemAtPath:[NSString stringWithUTF8String:path]
-                  error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  int ret = 0;  // NOTE: Return success by default.
+  
+  @try {
+    NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
+    [attribs setObject:[NSNumber numberWithLong:uid] 
+                forKey:NSFileOwnerAccountID];
+    [attribs setObject:[NSNumber numberWithLong:gid] 
+                forKey:NSFileGroupOwnerAccountID];
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-
-  return res;
+  return ret;
 }
 
 static int fusefm_chmod(const char* path, mode_t mode) {
-  int res = 0;  // Return success by default.
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-  
-  NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-  [attribs setObject:[NSNumber numberWithLong:mode] forKey:NSFilePosixPermissions];
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs setAttributes:attribs 
-           ofItemAtPath:[NSString stringWithUTF8String:path]
-                  error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  int ret = 0;  // NOTE: Return success by default.
+
+  @try {
+    NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
+    [attribs setObject:[NSNumber numberWithLong:mode] 
+                forKey:NSFilePosixPermissions];
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  
-  return res;
+  return ret;
 }
 
 int fusefm_utimens(const char* path, const struct timespec tv[2]) {
-  int res = 0;  // Return success by default.
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-  
-  NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-  NSDate* modification = 
-  [NSDate dateWithTimeIntervalSince1970:tv[1].tv_sec];
-  
-  [attribs setObject:modification forKey:NSFileModificationDate];
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs setAttributes:attribs 
-           ofItemAtPath:[NSString stringWithUTF8String:path]
-                  error:&error]) {
-    res = 0;
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  int ret = 0;  // NOTE: Return success by default.
+  @try {
+    NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
+    NSDate* modification = [NSDate dateWithTimeIntervalSince1970:tv[1].tv_sec];
+    [attribs setObject:modification forKey:NSFileModificationDate];
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  
-  return res;
+  return ret;
 }
 
 static int fusefm_fsync(const char* path, int isdatasync,
                         struct fuse_file_info* fi) {
+  // TODO: Support fsync?
   return 0;
 }
 
 static int fusefm_write(const char* path, const char* buf, size_t size, 
                         off_t offset, struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  int length = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
-                            handle:(id)(int)fi->fh
-                            buffer:buf
-                              size:size
-                            offset:offset
-                             error:&error];
-  if ( error != nil) {
-    length = -[error code];
+  int ret = -EIO;
+  
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
+                       handle:(id)(int)fi->fh
+                       buffer:buf
+                         size:size
+                       offset:offset
+                        error:&error];
+    MAYBE_USE_ERROR(ret, error);
   }
-
+  @catch (NSException* e) { }
   [pool release];
-  return length;
+  return ret;
 }
 
 static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
                        struct fuse_file_info *fi) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -EIO;
 
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  int length = [fs readFileAtPath:[NSString stringWithUTF8String:path]
-                           handle:(id)(int)fi->fh
-                           buffer:buf
-                             size:size
-                           offset:offset
-                              error:&error];
-  if ( error != nil) {
-    length = -[error code];
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
+                      handle:(id)(int)fi->fh
+                      buffer:buf
+                        size:size
+                      offset:offset
+                       error:&error];
+    MAYBE_USE_ERROR(ret, error);
   }
-  
+  @catch (NSException* e) { }
   [pool release];
-  return length;
+  return ret;
 }
 
 static int fusefm_readlink(const char *path, char *buf, size_t size)
 {
-  int res = -ENOENT;
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  NSString* linkPath = [NSString stringWithUTF8String:path];
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  NSString *pathContent = [fs destinationOfSymbolicLinkAtPath:linkPath
-                                                        error:&error];
-  if (pathContent != nil) {
-    res = 0;
-    [pathContent getFileSystemRepresentation:buf maxLength:size];
-  } else {
-    if (error != nil) {
-      res = -[error code];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;
+
+  @try {
+    NSString* linkPath = [NSString stringWithUTF8String:path];
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    NSString *pathContent = [fs destinationOfSymbolicLinkAtPath:linkPath
+                                                          error:&error];
+    if (pathContent != nil) {
+      ret = 0;
+      [pathContent getFileSystemRepresentation:buf maxLength:size];
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
-  return 0;
+  return ret;
 }
 
 static int fusefm_getxattr(const char *path, const char *name, char *value,
                            size_t size) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -ENOATTR;
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOATTR;
   @try {
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
@@ -1141,29 +1146,28 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
                                         forPath:[NSString stringWithUTF8String:path]
                                           error:&error];
     if (data != nil) {
-      res = [data length];  // default to returning size of buffer.
+      ret = [data length];  // default to returning size of buffer.
       if (value) {
         if (size > [data length]) {
           size = [data length];
         }
         [data getBytes:value length:size];
-        res = size;  // bytes read
+        ret = size;  // bytes read
       }
-    } else if (error != nil) {
-      res = -[error code];
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException * e) {
-    res = -ENOTSUP;
+  @catch (NSException* e) {
   }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_setxattr(const char *path, const char *name, const char *value,
                            size_t size, int flags) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -EPERM;
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -EPERM;
   @try {
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
@@ -1172,146 +1176,151 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
                            value:[NSData dataWithBytes:value length:size]
                            flags:flags
                            error:&error]) {
-      res = 0;
+      ret = 0;
     } else {
-      if ( error != nil ) {
-        res = -[error code];
-      }
+      MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException * e) {
-    res = -ENOTSUP;
-  }
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_listxattr(const char *path, char *list, size_t size)
 {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  int res = -ENOTSUP;
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOTSUP;
   @try {
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
-    NSArray *attributeNames =
+    NSArray* attributeNames =
       [fs extendedAttributesForPath:[NSString stringWithUTF8String:path]
                               error:&error];
-    if ( attributeNames != nil ) {
+    if (attributeNames != nil) {
       char zero = 0;
-      NSMutableData *data = [NSMutableData dataWithCapacity:size];  
+      NSMutableData* data = [NSMutableData dataWithCapacity:size];  
       for (int i = 0, count = [attributeNames count]; i < count; i++) {
         [data appendData:[[attributeNames objectAtIndex:i] dataUsingEncoding:NSUTF8StringEncoding]];
         [data appendBytes:&zero length:1];
       }
-      res = [data length];  // default to returning size of buffer.
+      ret = [data length];  // default to returning size of buffer.
       if (list) {
         if (size > [data length]) {
           size = [data length];
         }
         [data getBytes:list length:size];
       }
-    } else if (error != nil) {
-      res = -[error code];
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException * e) {
-    res = -ENOTSUP;
-  }
-
+  @catch (NSException* e) { }
   [pool release];
-  return res;
+  return ret;
 }
 
 static int fusefm_rename(const char* path, const char* toPath) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EACCES;
 
-  NSString* source = [NSString stringWithUTF8String:path];
-  NSString* destination = [NSString stringWithUTF8String:toPath];
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs moveItemAtPath:source toPath:destination error:&error]) {
-    ret = 0;  // Success!
-  } else {
-    if (error != nil) {
-      ret = -[error code];
+  @try {
+    NSString* source = [NSString stringWithUTF8String:path];
+    NSString* destination = [NSString stringWithUTF8String:toPath];
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs moveItemAtPath:source toPath:destination error:&error]) {
+      ret = 0;  // Success!
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
   return ret;  
 }
 
 static int fusefm_mkdir(const char* path, mode_t mode) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EACCES;
 
-  NSError* error = nil;
-  // TODO: Create proper attributes dictionary from mode_t.
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
-                     attributes:nil
-                          error:(NSError **)error]) {
-    ret = 0;  // Success!
-  } else {
-    if (error != nil) {
-      ret = -[error code];
+  @try {
+    NSError* error = nil;
+    // TODO: Create proper attributes dictionary from mode_t.
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
+                       attributes:nil
+                            error:(NSError **)error]) {
+      ret = 0;  // Success!
+    } else {
+      if (error != nil) {
+        ret = -[error code];
+      }
     }
   }
+  @catch (NSException* e) { }
   [pool release];
   return ret;
 }
 
 static int fusefm_unlink(const char* path) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EACCES;
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
-                     error:&error]) {
-    ret = 0;  // Success!
-  } else {
-    if (error != nil) {
-      ret = -[error code];
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
+                       error:&error]) {
+      ret = 0;  // Success!
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
   return ret;
 }
 
 static int fusefm_rmdir(const char* path) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EACCES;
-  
-  NSError* error = nil;
-  UserFileSystem* fs = [UserFileSystem currentFS];
-  if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
-                     error:&error]) {
-    ret = 0;  // Success!
-  } else {
-    if (error != nil) {
-      ret = -[error code];
+
+  @try {
+    NSError* error = nil;
+    UserFileSystem* fs = [UserFileSystem currentFS];
+    if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
+                       error:&error]) {
+      ret = 0;  // Success!
+    } else {
+      MAYBE_USE_ERROR(ret, error);
     }
   }
+  @catch (NSException* e) { }
   [pool release];
   return ret;
 }
 
-static void *fusefm_init(struct fuse_conn_info *conn) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+static void* fusefm_init(struct fuse_conn_info* conn) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   UserFileSystem* fs = [UserFileSystem currentFS];
   [fs retain];
-  [fs fuseInit];
+  @try {
+    [fs fuseInit];
+  }
+  @catch (NSException* e) { }
 
   [pool release];
   return fs;
 }
 
-static void fusefm_destroy(void *private_data) {
+static void fusefm_destroy(void* private_data) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   UserFileSystem* fs = (UserFileSystem *)private_data;
-  [fs fuseDestroy];
+  @try {
+    [fs fuseDestroy];
+  }
+  @catch (NSException* e) { }
   [fs release];
 
   [pool release];
@@ -1349,7 +1358,7 @@ static struct fuse_operations fusefm_oper = {
 #pragma mark Internal Lifecycle?
 
 - (void)mount:(NSDictionary *)args {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   assert(status_ == UserFileSystem_NOT_MOUNTED);
 
@@ -1360,7 +1369,7 @@ static struct fuse_operations fusefm_oper = {
   BOOL shouldForeground = [[args objectForKey:@"shouldForeground"] boolValue];
 
   // Create mount path if necessary.
-  NSFileManager *fileManager = [NSFileManager defaultManager];
+  NSFileManager* fileManager = [NSFileManager defaultManager];
   [fileManager createDirectoryAtPath:mountPath_ attributes:nil];
 
   // Trigger initialization of NSFileManager. This is rather lame, but if we
@@ -1389,7 +1398,7 @@ static struct fuse_operations fusefm_oper = {
   
   // Start Fuse Main
   int argc = [arguments count];
-  const char *argv[argc];
+  const char* argv[argc];
   for (int i = 0, count = [arguments count]; i < count; i++) {
     NSString* argument = [arguments objectAtIndex:i];
     argv[i] = strdup([argument UTF8String]);  // We'll just leak this for now.
