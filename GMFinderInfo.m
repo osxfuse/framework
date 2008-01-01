@@ -7,27 +7,52 @@
 //
 #import "GMFinderInfo.h"
 
-// Taken from volicon.c
-struct FndrGenericInfo {
-  u_int32_t   ignored0;
-  u_int32_t   ignored1;
-  u_int16_t   flags;
+// All fields should be in network order. See CoreServices/CarbonCore/Finder.h
+// for details on what flags and extendedFlags can be.
+#pragma pack(push, 1)
+typedef struct {
+  union {
+    struct {
+      UInt32 type;
+      UInt32 creator;
+    } fileInfo;
+    struct {
+      UInt16 y1;  // Top left of window.
+      UInt16 x1;
+      UInt16 y2;  // Bottom right of window.
+      UInt16 x2;
+    } dirInfo;
+  } fileOrDirInfo;
+  UInt16 flags;  // Finder flags.
   struct {
-    int16_t ignored2;
-    int16_t ignored3;
-  } fdLocation;
-  int16_t     ignored4;
-} __attribute__((aligned(2), packed));
-typedef struct FndrGenericInfo FndrGenericInfo;
-#define XATTR_FINDERINFO_SIZE 32
+    UInt16 y;
+    UInt16 x;
+  } location;
+  UInt16 reserved;
+} GenericFinderInfo;
+
+typedef struct {
+  UInt32 ignored0;
+  UInt32 ignored1;
+  UInt16 extendedFlags;  // Extended finder flags.
+  UInt16 ignored3;
+  UInt32 ignored4;
+} GenericExtendedFinderInfo;
+
+typedef struct {
+  GenericFinderInfo base;
+  GenericExtendedFinderInfo extended;
+} PackedFinderInfo;
+#pragma pack(pop)
 
 @implementation GMFinderInfo
 
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags {
-  char dataBytes[XATTR_FINDERINFO_SIZE];
-  memset(dataBytes, 0, sizeof(dataBytes));
-  ((struct FndrGenericInfo *)dataBytes)->flags |= htons(flags);
-  return [NSData dataWithBytes:dataBytes length:XATTR_FINDERINFO_SIZE];  
+  PackedFinderInfo info;
+  assert(sizeof(info) == 32);
+  memset(&info, 0, sizeof(info));
+  info.base.flags = htons(flags);
+  return [NSData dataWithBytes:&info length:sizeof(info)];
 }
 
 @end

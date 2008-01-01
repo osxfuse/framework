@@ -7,9 +7,13 @@
 //
 #import <Foundation/Foundation.h>
 
+// TODO: There must be a neat-o obj-c way to hide the member vars. Maybe should
+// have a UserFileSystemImpl in the .m file and have the init method of
+// UserFileSystem actually return a UserFileSystemImpl?
+
 @interface UserFileSystem : NSObject {
   NSString* mountPath_;
-  BOOL isMounted_;
+  int status_;  // Actually internal UserFileSystemStatus enum value.
   BOOL isThreadSafe_;
   id delegate_;
 }
@@ -99,8 +103,7 @@ extern NSString* const kUserFileSystemDidUnmount;
 // The UserFileSystem's delegate can implement any of the below protocols.
 //
 // In order to create the most minimal read-only filesystem possible then your
-// delegate should implement the following four methods UserFileSystmOperations
-// methods (declared below):
+// delegate should implement the following four UserFileSystmOperations methods:
 //
 // - (BOOL)fileExistsAtPath:(NSString *)path isDirectory:(BOOL *)isDirectory;
 // - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 

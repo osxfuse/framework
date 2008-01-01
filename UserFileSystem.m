@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/param.h>
 #include <sys/mount.h>
+#include <sys/ioctl.h>
 
 #import <Foundation/Foundation.h>
 #import "GMAppleDouble.h"
@@ -33,6 +34,15 @@
 NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
 NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
 NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
+
+typedef enum {
+  UserFileSystem_NOT_MOUNTED,   // Not mounted.
+  UserFileSystem_MOUNTING,      // In the process of mounting.
+  UserFileSystem_INITIALIZING,  // Almost done mounting.
+  UserFileSystem_MOUNTED,       // Confirmed to be mounted.
+  UserFileSystem_UNMOUNTING,    // In the process of unmounting.
+  UserFileSystem_FAILURE,       // Failed state; probably a mount failure.
+} UserFileSystemStatus;
 
 @interface UserFileSystem (UserFileSystemPrivate)
 
@@ -67,7 +77,7 @@ NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
   if ((self = [super init])) {
-    isMounted_ = NO;
+    status_ = UserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
     delegate_ = delegate;
   }
@@ -114,7 +124,7 @@ NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
 }
 
 - (void)unmount {
-  if (isMounted_) {
+  if (status_ == UserFileSystem_MOUNTED) {
     NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
     NSTask *unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
                                                    arguments:args];
@@ -132,9 +142,6 @@ NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
   return (UserFileSystem *)context->private_data;
 }
 
-
-#include <sys/ioctl.h>
-
 #define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2, u_int32_t)
 extern int fuse_chan_fd_np();
 static const int kMaxWaitForMountTries = 50;
@@ -148,6 +155,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                     FUSEDEVIOCGETHANDSHAKECOMPLETE, 
                     &handShakeComplete);
     if (ret == 0 && handShakeComplete) {
+      status_ = UserFileSystem_MOUNTED;
+      
       // Successfully mounted, so post notification.
       NSDictionary* userInfo = 
         [NSDictionary dictionaryWithObjectsAndKeys:
@@ -163,13 +172,13 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   
   // Tried for a long time and no luck :-(
-  // TODO: Umount and report failure?
+  // TODO: Unmount and report failure?
   [pool release];
 }
 
-- (void)fuseInit {    
-  isMounted_ = YES;
-
+- (void)fuseInit {
+  status_ = UserFileSystem_INITIALIZING;
+  
   // The mount point won't actually show up until this winds its way
   // back through the kernel after this routine returns. In order to post
   // the kUserFileSystemDidMount notification we start a new thread that will
@@ -183,7 +192,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([delegate_ respondsToSelector:@selector(willUnmount)]) {
     [delegate_ willUnmount];
   }
-  isMounted_ = NO;
+  status_ = UserFileSystem_UNMOUNTING;
 
   NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
@@ -1342,23 +1351,25 @@ static struct fuse_operations fusefm_oper = {
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
+  assert(status_ == UserFileSystem_NOT_MOUNTED);
+
   [mountPath_ autorelease];
   mountPath_ = [[args objectForKey:@"mountPath"] retain];
   NSArray* options = [args objectForKey:@"options"];
   BOOL isThreadSafe = [[args objectForKey:@"isThreadSafe"] boolValue];
   BOOL shouldForeground = [[args objectForKey:@"shouldForeground"] boolValue];
-  
+
+  // Create mount path if necessary.
+  NSFileManager *fileManager = [NSFileManager defaultManager];
+  [fileManager createDirectoryAtPath:mountPath_ attributes:nil];
+
   // Trigger initialization of NSFileManager. This is rather lame, but if we
   // don't call directoryContents before we mount our FUSE filesystem and 
   // the filesystem uses NSFileManager we may deadlock. It seems that the
   // NSFileManager class will do lazy init and will query all mounted
   // filesystems. This leads to deadlock when we re-enter our mounted fuse fs. 
   // Once initialized it seems to work fine.
-  [[NSFileManager defaultManager] directoryContentsAtPath:@"/Volumes"];
-
-  // Create mount path if necessary.
-  NSFileManager *fileManager = [NSFileManager defaultManager];
-  [fileManager createDirectoryAtPath:mountPath_ attributes:nil];
+  [fileManager directoryContentsAtPath:@"/Volumes"];
 
   NSMutableArray* arguments = 
     [NSMutableArray arrayWithObject:[[NSBundle mainBundle] executablePath]];
@@ -1386,8 +1397,34 @@ static struct fuse_operations fusefm_oper = {
   if ([delegate_ respondsToSelector:@selector(willMount)]) {
     [delegate_ willMount];
   }
+  status_ = UserFileSystem_MOUNTING;
   [pool release];
-  fuse_main(argc, (char **)argv, &fusefm_oper, self);
+  int ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
+
+  pool = [[NSAutoreleasePool alloc] init];
+
+  if (ret != 0 || status_ == UserFileSystem_MOUNTING) {
+    // If we returned successfully from fuse_main while we still think we are 
+    // mounting then an error must have occured during mount.
+    status_ = UserFileSystem_FAILURE;
+
+    NSError* error = [NSError errorWithDomain:@"UserFileSystemErrorDomain"
+                                         code:(ret == 0) ? -1 : ret
+                                     userInfo:nil];
+    
+    NSDictionary* userInfo = 
+    [NSDictionary dictionaryWithObjectsAndKeys:
+     mountPath_, @"mountPath",
+     error, @"error",
+     nil, nil];
+    NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+    [center postNotificationName:kUserFileSystemMountFailed object:self
+                        userInfo:userInfo];
+  } else {
+    status_ = UserFileSystem_NOT_MOUNTED;
+  }
+
+  [pool release];
 }
 
 @end
