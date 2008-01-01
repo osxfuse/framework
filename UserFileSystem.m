@@ -27,9 +27,6 @@
 #import "GMResourceFork.h"
 #import "NSData+BufferOffset.h"
 
-#define kFinderInfoXAttr   @"com.apple.FinderInfo"
-#define kResourceForkXattr @"com.apple.ResourceFork"
-
 // Notifications
 NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
 NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
@@ -44,22 +41,19 @@ typedef enum {
   UserFileSystem_FAILURE,       // Failed state; probably a mount failure.
 } UserFileSystemStatus;
 
-@interface UserFileSystem (UserFileSystemPrivate)
+@interface UserFileSystem ()
 
 + (UserFileSystem *)currentFS;
 
 - (void)mount:(NSDictionary *)args;
+- (void)waitUntilMounted;
 
-// Determines whether the given path is a for a resource managed by 
-// UserFileSystem, such as a custom icon for a file. The optional
-// "type" param is set to the type of the managed resource. The optional
-// "dataPath" param is set to the file that represents this resource. For
-// example, for a custom icon resource fork, this would be the corresponding 
-// data fork. For a custom directory icon, this would be the directory itself.
-- (BOOL)isManagedResourceAtPath:(NSString *)path type:(NSString **)type
-                       dataPath:(NSString **)dataPath;
-
-- (NSData *)managedContentsForPath:(NSString *)path;
+- (UInt16)finderFlagsForPath:(NSString *)path;
+- (BOOL)hasCustomIconAtPath:(NSString *)path;
+- (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath;
+- (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath;
+- (NSData *)resourceForkContentsAtPath:(NSString *)path;
+- (NSData *)appleDoubleContentsAtPath:(NSString *)path;
 
 - (BOOL)fillStatBuffer:(struct stat *)stbuf 
                forPath:(NSString *)path
@@ -205,29 +199,55 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Finder Info, Resource Forks and HFS headers
 
-- (BOOL)usesResourceForks{
-  return ([delegate_ respondsToSelector:@selector(finderFlagsForPath:)] ||
-          [delegate_ respondsToSelector:@selector(iconDataForPath:)] ||
-          [delegate_ respondsToSelector:@selector(URLContentOfWeblocAtPath:)]);
-}
-
 - (UInt16)finderFlagsForPath:(NSString *)path {
-  UInt16 flags = 0;
+  UInt16 flags = 0;  
   if ([delegate_ respondsToSelector:@selector(finderFlagsForPath:)]) {
-    return [delegate_ finderFlagsForPath:path];
+    flags = [delegate_ finderFlagsForPath:path];
   } else if ([delegate_ respondsToSelector:@selector(iconDataForPath:)] &&
              [delegate_ iconDataForPath:path] != nil) {
     flags |= kHasCustomIcon;
+  }
+  if ([[path lastPathComponent] isEqualToString:@"Icon\r"]) {
+    flags |= kIsInvisible;
   }
   return flags;
 }
 
 - (BOOL)hasCustomIconAtPath:(NSString *)path {
   UInt16 flags = [self finderFlagsForPath:path];
-  return (flags & kHasCustomIcon);
+  return (flags & kHasCustomIcon) == kHasCustomIcon;
 }
 
-- (NSData *)resourceForkContentsForPath:(NSString *)path {
+- (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath {
+  NSString* name = [path lastPathComponent];
+  if ([name isEqualToString:@"Icon\r"]) {
+    if (dirPath) {
+      *dirPath = [path stringByDeletingLastPathComponent];
+    }
+    return YES;
+  }
+  return NO;
+}
+
+- (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath {
+  NSString* name = [path lastPathComponent];
+  if ([name isEqualToString:@"._Icon\r"]) {    
+    if (realPath) {
+      *realPath = [path stringByDeletingLastPathComponent];
+    }
+    return YES;
+  } else if ([name hasPrefix:@"._"]) {
+    if (realPath) {
+      name = [name substringFromIndex:2];
+      *realPath = [path stringByDeletingLastPathComponent];
+      *realPath = [*realPath stringByAppendingPathComponent:name];
+    }
+    return YES;
+  }
+  return NO;  
+}
+
+- (NSData *)resourceForkContentsAtPath:(NSString *)path {
   NSURL* url = nil;
   if ([path hasSuffix:@".webloc"] &&
        [delegate_ respondsToSelector:@selector(URLContentOfWeblocAtPath:)]) {
@@ -258,103 +278,31 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return nil;
 }
 
-// Determines whether the given path is a for a resource managed by 
-// UserFileSystem, such as a custom icon for a file. The optional
-// "type" param is set to the type of the managed resource. The optional
-// "dataPath" param is set to the file that represents this resource. For
-// example, for a custom icon resource fork, this would be the corresponding 
-// data fork. For a custom directory icon, this would be the directory itself.
-NSString* const FUSEManagedDirectoryIconFile = @"FUSEManagedDirectoryIconFile";
-NSString* const FUSEManagedDirectoryIconResource = @"FUSEManagedDirectoryIconResource";
-NSString* const FUSEManagedFileResource = @"FUSEMangedFileResource";
-NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
-- (BOOL)isManagedResourceAtPath:(NSString *)path
-                           type:(NSString **)type
-                       dataPath:(NSString **)dataPath {
-  if (![self usesResourceForks]) {
-    return NO;
+// Returns the AppleDouble file contents, if any, for the given path. You should
+// call this with the realPath out-param from a call to isAppleDoubleAtPath:.
+//
+// On 10.5 and (hopefully) above, the Finder will end up using the extended
+// attributes and so we won't need to serve ._ files. The current setup will 
+// treat the ._ for a directory and it's ._Icon\r file the same. This means that 
+// we'll put extra resource-fork information in directory's ._ file even though 
+// it isn't needed. The simplification is worth it given it only affects 10.4.
+- (NSData *)appleDoubleContentsAtPath:(NSString *)path {
+  UInt16 flags = [self finderFlagsForPath:path];
+  NSData* resourceForkData = [self resourceForkContentsAtPath:path];
+  if (flags != 0 || resourceForkData != nil) {
+    GMAppleDouble* doubleFile = [GMAppleDouble appleDouble];
+    NSData* finderInfo = [GMFinderInfo finderInfoWithFinderFlags:flags];
+    [doubleFile addEntryWithID:DoubleEntryFinderInfo data:finderInfo];
+    if (resourceForkData) {
+      [doubleFile addEntryWithID:DoubleEntryResourceFork 
+                            data:resourceForkData];
+    }
+    return [doubleFile data];
   }
-  NSString* parentDir = [path stringByDeletingLastPathComponent];
-  NSString* name = [path lastPathComponent];
-  if ([name isEqualToString:@"Icon\r"]) {
-    if (type) {
-      *type = FUSEManagedDirectoryIconFile;
-    }
-    if (dataPath) {
-      *dataPath = parentDir;
-    }
-    return YES;
-  } else if ([name isEqualToString:@"._Icon\r"]) {
-    if (type) {
-      *type = FUSEManagedDirectoryIconResource;
-    }
-    if (dataPath) {
-      *dataPath = parentDir;
-    }
-    return YES;
-  } else if ([name hasPrefix:@"._"]) {
-    if (type || dataPath) {
-      // Since this is a request for a resource fork, we fix up the path to 
-      // refer the data fork.
-      name = [name substringFromIndex:2];
-      NSString* dp = [parentDir stringByAppendingPathComponent:name];
-      if (type) {
-        BOOL isDirectory = NO; // Default to NO
-        [self fileExistsAtPath:dp isDirectory:&isDirectory];
-        if (isDirectory) {
-          *type = FUSEManagedDirectoryResource;
-        } else {
-          *type = FUSEManagedFileResource;
-        }
-      }
-      if (dataPath) {
-        *dataPath = dp;
-      }
-    }
-    return YES;
-  }
-  return NO;
+  return nil;
 }
 
-- (NSData *)managedContentsForPath:(NSString *)path {
-  NSString* dataPath = path;  // Default to the given path.
-  NSString* type = nil;
-  BOOL isManagedResource = 
-  [self isManagedResourceAtPath:path type:&type dataPath:&dataPath];
-  if (!isManagedResource) {
-    return nil;
-  }
-  
-  if ([type isEqualToString:FUSEManagedDirectoryIconFile]) {
-    return nil;  // The Icon\r file contains no data.
-  }
-  
-  int flags = [self finderFlagsForPath:dataPath];
-  BOOL includeResource = YES;
-  if ([type isEqualToString:FUSEManagedDirectoryIconResource]) {
-    flags |= kIsInvisible;
-    includeResource = YES;
-  } else if ([type isEqualToString:FUSEManagedFileResource]) {
-    includeResource = YES;
-  } else if ([type isEqualToString:FUSEManagedDirectoryResource]) {
-    includeResource = NO;
-  } else {
-    NSLog(@"Unknown managed file type: %@", type);
-    return nil;
-  }
-  
-  NSData* finderInfo = [GMFinderInfo finderInfoWithFinderFlags:flags];
-  GMAppleDouble* doubleFile = [GMAppleDouble appleDouble];
-  [doubleFile addEntryWithID:DoubleEntryFinderInfo data:finderInfo];
-  if (includeResource) {
-    [doubleFile addEntryWithID:DoubleEntryResourceFork 
-                          data:[self resourceForkContentsForPath:dataPath]];
-  }
-  return [doubleFile data];
-}
-
-
-#pragma mark Advanced File Operations
+#pragma mark Internal Stat Operations
 
 - (BOOL)fillStatvfsBuffer:(struct statvfs *)stbuf 
                   forPath:(NSString *)path 
@@ -456,15 +404,6 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
     NSNumber* size = [attributes objectForKey:NSFileSize];
     if (size) {
       stbuf->st_size = [size longLongValue];
-    } else {
-      // NOTE: We use the given path here, since managedContentsForPath will
-      // handle managed resources and return the proper data.
-      NSData* data = [self managedContentsForPath:path];
-      if (data) {
-        stbuf->st_size = [data length];
-      } else {
-        stbuf->st_size = 0;
-      }
     }
   }
 
@@ -577,12 +516,17 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
                   mode:(int)mode
              outHandle:(id *)outHandle 
                  error:(NSError **)error {
-  // First see if it is an AppleDouble or Icon\r file that we handle.
-  *outHandle = [self managedContentsForPath:path];
-  if (*outHandle != nil) {
+  // First see if it is an Icon\r or AppleDouble file that we handle.
+  if ([self isDirectoryIconAtPath:path dirPath:nil]) {
+    *outHandle = [NSData data];
     return YES;
   }
-
+  NSString* realPath;
+  if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
+    *outHandle = [self appleDoubleContentsAtPath:realPath];
+    return (*outHandle != nil);
+  }
+  
   if ([delegate_ respondsToSelector:@selector(contentsAtPath:)]) {
     *outHandle = [delegate_ contentsAtPath:path];
     if (*outHandle != nil) {
@@ -681,9 +625,10 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
   if (contents != nil && [self hasCustomIconAtPath:path]) {
     // TODO: Check if we actually need to list this in the dir or if Finder can
     // find it for us.
+    // Update: It looks like we don't need to include Icon\r in directory listing.
     NSMutableArray *fullContents = [NSMutableArray arrayWithArray:contents];
-    [fullContents addObjectsFromArray:contents];
-    [fullContents addObject:@"Icon\r"];
+//    [fullContents addObjectsFromArray:contents];
+//    [fullContents addObject:@"Icon\r"];
     contents = fullContents;
   }
   return contents;
@@ -694,23 +639,25 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
                                    error:(NSError **)error {
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
-  [attributes setObject:[NSNumber numberWithLong:0555] 
+  [attributes setObject:[NSNumber numberWithLong:0555]
                  forKey:NSFilePosixPermissions];
   [attributes setObject:[NSNumber numberWithLong:1]
                  forKey:NSFileReferenceCount];    // 1 means "don't know"
   
-  NSString* dataPath = path;  // Default to the given path.
-  BOOL isManagedResource = [self usesResourceForks] ? 
-    [self isManagedResourceAtPath:path type:nil dataPath:&dataPath] : NO;
-
+  BOOL isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
+  BOOL isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
+  assert(!(isDirectoryIcon && isAppleDouble));
+  
+  // We give them two chances to tell us whether or not the file exists. One is
+  // via attributesOfItemAtPath and the other is fileExistsAtPath:isDirectory:.
   BOOL needFileExists = NO;
   
   // The delegate can override any of the above defaults by implementing the
   // attributesOfItemAtPath: selector and returning a custom dictionary.
-  if ([delegate_ respondsToSelector:@selector(attributesOfFileSystemForPath:error:)]) {
+  if ([delegate_ respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
     *error = nil;
     NSDictionary* customAttribs = 
-      [delegate_ attributesOfItemAtPath:dataPath error:error];
+      [delegate_ attributesOfItemAtPath:path error:error];
     if (!customAttribs) {
       if (!(*error)) {
         *error = [UserFileSystem errorWithCode:ENOENT];
@@ -719,15 +666,41 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
     }
     [attributes addEntriesFromDictionary:customAttribs];
   } else {
-    needFileExists = YES;
+    needFileExists = YES;  // attributesOfItemAtPath: not implemented.
   }
+
+  // If this is a directory Icon\r then it is an empty file and we're done.
+  if (isDirectoryIcon) {
+    if ([self hasCustomIconAtPath:path]) {
+      [attributes setObject:NSFileTypeRegular forKey:NSFileType];
+      [attributes setObject:[NSNumber numberWithLongLong:0] forKey:NSFileSize];
+      return attributes;
+    }
+    *error = [UserFileSystem errorWithCode:ENOENT];
+    return nil;
+  }
+  
+  // If this is a ._ then we'll need to compute its size and we're done.
+  if (isAppleDouble) {
+    NSData* data = [self appleDoubleContentsAtPath:path];
+    if (data != nil) {
+      [attributes setObject:NSFileTypeRegular forKey:NSFileType];
+      [attributes setObject:[NSNumber numberWithLongLong:[data length]]
+                     forKey:NSFileSize];
+      return attributes;
+    }
+    *error = [UserFileSystem errorWithCode:ENOENT];
+    return nil;
+  }
+  
+  // If they don't supply an NSFileType we'll try fileExistsAtPath:isDirectory:.
   if (![attributes objectForKey:NSFileType]) {
     needFileExists = YES;
   }
   if (needFileExists) {
     if ([delegate_ respondsToSelector:@selector(fileExistsAtPath:isDirectory:)]) {
       BOOL isDirectory;
-      if (![delegate_ fileExistsAtPath:dataPath isDirectory:&isDirectory]) {
+      if (![delegate_ fileExistsAtPath:path isDirectory:&isDirectory]) {
         *error = [UserFileSystem errorWithCode:ENOENT];
         return nil;
       }
@@ -741,9 +714,13 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
     }
   }
   
-  if (isManagedResource) {
-    [attributes setObject:NSFileTypeRegular forKey:NSFileType];
-    [attributes removeObjectForKey:NSFileSize];
+  // If they don't supply a file size, we'll try to compute it for them.
+  if (![attributes objectForKey:NSFileSize]) {
+    if ([delegate_ respondsToSelector:@selector(contentsForPath:)]) {
+      NSData* data = [delegate_ contentsAtPath:path];
+      [attributes setObject:[NSNumber numberWithLong:[data length]]
+                     forKey:NSFileSize];
+    }
   }
   return attributes;
 }
@@ -789,11 +766,27 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 
 - (NSData *)valueOfExtendedAttribute:(NSString *)name forPath:(NSString *)path
                                error:(NSError **)error {
+  NSData* data = nil;
   if ([delegate_ respondsToSelector:@selector(valueOfExtendedAttribute:forPath:error:)]) {
-    return [delegate_ valueOfExtendedAttribute:name forPath:path error:error];
+    data = [delegate_ valueOfExtendedAttribute:name forPath:path error:error];
   }
-  *error = [UserFileSystem errorWithCode:ENOTSUP];
-  return nil;
+  if (data == nil) {
+    if ([name isEqualToString:@"com.apple.FinderInfo"]) {
+      int flags = [self finderFlagsForPath:path];
+      data = [GMFinderInfo finderInfoWithFinderFlags:flags];
+    } else if ([name isEqualToString:@"com.apple.ResourceFork"]) {
+      [self isDirectoryIconAtPath:path dirPath:&path];
+      data = [self resourceForkContentsAtPath:path];
+      if (data == nil) {
+        *error = [UserFileSystem errorWithCode:ENOATTR];
+        return nil;
+      }
+    }    
+  }
+  if (data == nil) {
+    *error = [UserFileSystem errorWithCode:ENOTSUP];
+  }
+  return data;
 }
 
 - (BOOL)setExtendedAttribute:(NSString *)name 
@@ -1357,8 +1350,7 @@ static struct fuse_operations fusefm_oper = {
   .fsync = fusefm_fsync,
 };
 
-// TODO: Better name for below mark
-#pragma mark Internal Lifecycle?
+#pragma mark Internal Mount
 
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
