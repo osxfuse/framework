@@ -824,8 +824,11 @@ NSString* const FUSEManagedDirectoryResource = @"FUSEManagedDirectoryResource";
 
 #define MAYBE_USE_ERROR(var, error)                                       \
   if ((error) != nil &&                                                   \
-      [[(error) domain] isEqualToString:@"NSPosixErrorDomain"]) {         \
-    (var) = [error code];                                                 \
+      [[(error) domain] isEqualToString:NSPOSIXErrorDomain]) {            \
+    int code = [(error) code];                                            \
+    if (code != 0) {                                                      \
+      (var) = -code;                                                      \
+    }                                                                     \
   }
 
 static int fusefm_statfs(const char* path, struct statvfs* stbuf) {
