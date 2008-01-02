@@ -1065,7 +1065,7 @@ static int fusefm_chmod(const char* path, mode_t mode) {
   return ret;
 }
 
-int fusefm_utimens(const char* path, const struct timespec tv[2]) {
+static int fusefm_utimens(const char* path, const struct timespec tv[2]) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = 0;  // NOTE: Return success by default.
   @try {
