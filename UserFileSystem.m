@@ -20,6 +20,8 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/ioctl.h>
+#include <sys/sysctl.h>
+#include <sys/utsname.h>
 
 #import <Foundation/Foundation.h>
 #import "GMAppleDouble.h"
@@ -41,7 +43,7 @@ typedef enum {
   UserFileSystem_FAILURE,       // Failed state; probably a mount failure.
 } UserFileSystemStatus;
 
-@interface UserFileSystem ()
+@interface UserFileSystem (UserFileSystemPrivate)
 
 + (UserFileSystem *)currentFS;
 
@@ -74,6 +76,22 @@ typedef enum {
     status_ = UserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
     delegate_ = delegate;
+    
+    // Version 10.4 requires ._ to appear in directory listings.
+    // TODO: Switch to fuse_os_version_major() at some point.
+    shouldListDoubleFiles_ = YES;
+    struct utsname u;
+    size_t len = sizeof(u.release);
+    if (sysctlbyname("kern.osrelease", u.release, &len, NULL, 0) == 0) {
+      char* c = strchr(u.release, '.');
+      if (c) {
+        *c = '\0';
+        long version = strtol(u.release, NULL, 10);
+        if (errno != EINVAL && errno != ERANGE && version >= 9) {
+          shouldListDoubleFiles_ = NO;  // We are Leopard or above.
+        }
+      }
+    }
   }
   return self;
 }
@@ -200,15 +218,18 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Finder Info, Resource Forks and HFS headers
 
 - (UInt16)finderFlagsForPath:(NSString *)path {
-  UInt16 flags = 0;  
+  UInt16 flags = 0;
+
+  // If a directory icon, we'll make invisible and update the path to parent.
+  if ([self isDirectoryIconAtPath:path dirPath:&path]) {
+    flags |= kIsInvisible;
+  }
+
   if ([delegate_ respondsToSelector:@selector(finderFlagsForPath:)]) {
-    flags = [delegate_ finderFlagsForPath:path];
+    flags |= [delegate_ finderFlagsForPath:path];
   } else if ([delegate_ respondsToSelector:@selector(iconDataForPath:)] &&
              [delegate_ iconDataForPath:path] != nil) {
     flags |= kHasCustomIcon;
-  }
-  if ([[path lastPathComponent] isEqualToString:@"Icon\r"]) {
-    flags |= kIsInvisible;
   }
   return flags;
 }
@@ -231,12 +252,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath {
   NSString* name = [path lastPathComponent];
-  if ([name isEqualToString:@"._Icon\r"]) {    
-    if (realPath) {
-      *realPath = [path stringByDeletingLastPathComponent];
-    }
-    return YES;
-  } else if ([name hasPrefix:@"._"]) {
+  if ([name hasPrefix:@"._"]) {
     if (realPath) {
       name = [name substringFromIndex:2];
       *realPath = [path stringByDeletingLastPathComponent];
@@ -282,12 +298,15 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 // call this with the realPath out-param from a call to isAppleDoubleAtPath:.
 //
 // On 10.5 and (hopefully) above, the Finder will end up using the extended
-// attributes and so we won't need to serve ._ files. The current setup will 
-// treat the ._ for a directory and it's ._Icon\r file the same. This means that 
-// we'll put extra resource-fork information in directory's ._ file even though 
-// it isn't needed. The simplification is worth it given it only affects 10.4.
+// attributes and so we won't need to serve ._ files. 
 - (NSData *)appleDoubleContentsAtPath:(NSString *)path {
   UInt16 flags = [self finderFlagsForPath:path];
+ 
+  // We treat the ._ for a directory and it's ._Icon\r file the same. This means
+  // that we'll put extra resource-fork information in directory's ._ file even 
+  // though it isn't needed. It's worth it given that it only affects 10.4.
+  [self isDirectoryIconAtPath:path dirPath:&path];
+
   NSData* resourceForkData = [self resourceForkContentsAtPath:path];
   if (flags != 0 || resourceForkData != nil) {
     GMAppleDouble* doubleFile = [GMAppleDouble appleDouble];
@@ -622,13 +641,21 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else if ([path isEqualToString:@"/"]) {
     contents = [NSArray array];  // Give them an empty root directory for free.
   }
-  if (contents != nil && [self hasCustomIconAtPath:path]) {
-    // TODO: Check if we actually need to list this in the dir or if Finder can
-    // find it for us.
-    // Update: It looks like we don't need to include Icon\r in directory listing.
+  if (contents != nil && shouldListDoubleFiles_) {
+    // Note: Tiger (10.4) requires that the ._ file are explicitly listed in 
+    // the directory contents.
     NSMutableArray *fullContents = [NSMutableArray arrayWithArray:contents];
-//    [fullContents addObjectsFromArray:contents];
-//    [fullContents addObject:@"Icon\r"];
+    for (int i = 0; i < [contents count]; ++i) {
+      NSString* name = [contents objectAtIndex:i];
+      NSString* pathPlusName = [path stringByAppendingPathComponent:name];
+      if ([self hasCustomIconAtPath:pathPlusName]) {
+        [fullContents addObject:[NSString stringWithFormat:@"._%@",name]];
+      }
+    }
+    if ([self hasCustomIconAtPath:path]) {
+      [fullContents addObject:@"Icon\r"];
+      [fullContents addObject:@"._Icon\r"];
+    }
     contents = fullContents;
   }
   return contents;

@@ -14,7 +14,8 @@
 @interface UserFileSystem : NSObject {
   NSString* mountPath_;
   int status_;  // Actually internal UserFileSystemStatus enum value.
-  BOOL isThreadSafe_;
+  BOOL isThreadSafe_;  // Is the delegate thread-safe?
+  BOOL shouldListDoubleFiles_;  // Should directory listings contain ._ files?
   id delegate_;
 }
 
