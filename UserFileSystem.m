@@ -29,10 +29,12 @@
 #import "GMResourceFork.h"
 #import "NSData+BufferOffset.h"
 
+#define EXPORT __attribute__((visibility("default")))
+
 // Notifications
-NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
-NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
-NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
+EXPORT NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
+EXPORT NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
+EXPORT NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
 
 typedef enum {
   UserFileSystem_NOT_MOUNTED,   // Not mounted.
