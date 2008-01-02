@@ -627,15 +627,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Directory Contents
 
-- (BOOL)fileExistsAtPath:(NSString *)path isDirectory:(BOOL *)isDirectory {
-  if ([delegate_ respondsToSelector:@selector(fileExistsAtPath:isDirectory:)]) {
-    return [delegate_ fileExistsAtPath:path isDirectory:isDirectory];
-  }  
-  
-  *isDirectory = [path isEqualToString:@"/"];
-  return YES; 
-}
-
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
   NSArray* contents = nil;
   if ([delegate_ respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
@@ -672,15 +663,16 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  forKey:NSFilePosixPermissions];
   [attributes setObject:[NSNumber numberWithLong:1]
                  forKey:NSFileReferenceCount];    // 1 means "don't know"
+  if ([path isEqualToString:@"/"]) {
+    [attributes setObject:NSFileTypeDirectory forKey:NSFileType];
+  } else {
+    [attributes setObject:NSFileTypeRegular forKey:NSFileType];
+  }
   
   BOOL isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
   BOOL isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
   assert(!(isDirectoryIcon && isAppleDouble));
-  
-  // We give them two chances to tell us whether or not the file exists. One is
-  // via attributesOfItemAtPath and the other is fileExistsAtPath:isDirectory:.
-  BOOL needFileExists = NO;
-  
+
   // The delegate can override any of the above defaults by implementing the
   // attributesOfItemAtPath: selector and returning a custom dictionary.
   if ([delegate_ respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
@@ -694,8 +686,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       return nil;
     }
     [attributes addEntriesFromDictionary:customAttribs];
-  } else {
-    needFileExists = YES;  // attributesOfItemAtPath: not implemented.
   }
 
   // If this is a directory Icon\r then it is an empty file and we're done.
@@ -721,36 +711,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     *error = [UserFileSystem errorWithCode:ENOENT];
     return nil;
   }
-  
-  // If they don't supply an NSFileType we'll try fileExistsAtPath:isDirectory:.
-  if (![attributes objectForKey:NSFileType]) {
-    needFileExists = YES;
-  }
-  if (needFileExists) {
-    if ([delegate_ respondsToSelector:@selector(fileExistsAtPath:isDirectory:)]) {
-      BOOL isDirectory;
-      if (![delegate_ fileExistsAtPath:path isDirectory:&isDirectory]) {
-        *error = [UserFileSystem errorWithCode:ENOENT];
-        return nil;
-      }
-      [attributes setObject:(isDirectory ? NSFileTypeDirectory : NSFileTypeRegular)
-                      forKey:NSFileType];      
-    } else {
-      NSLog(@"You must either fill in the NSFileType or implement the "
-            "fileExistsAtPath:isDirectory selector.");
+
+  // If they don't supply a size and it is a file then we try to compute it.
+  if (![attributes objectForKey:NSFileSize] &&
+      ![[attributes objectForKey:NSFileType] isEqualToString:NSFileTypeDirectory] &&
+      [delegate_ respondsToSelector:@selector(contentsForPath:)]) {
+    NSData* data = [delegate_ contentsAtPath:path];
+    if (data == nil) {
       *error = [UserFileSystem errorWithCode:ENOENT];
       return nil;
     }
+    [attributes setObject:[NSNumber numberWithLongLong:[data length]]
+                   forKey:NSFileSize];
   }
-  
-  // If they don't supply a file size, we'll try to compute it for them.
-  if (![attributes objectForKey:NSFileSize]) {
-    if ([delegate_ respondsToSelector:@selector(contentsForPath:)]) {
-      NSData* data = [delegate_ contentsAtPath:path];
-      [attributes setObject:[NSNumber numberWithLong:[data length]]
-                     forKey:NSFileSize];
-    }
-  }
+
   return attributes;
 }
 

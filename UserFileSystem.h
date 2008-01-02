@@ -231,12 +231,6 @@ extern NSString* const kUserFileSystemDidUnmount;
 
 #pragma mark Getting and Setting Attributes
 
-// TODO: I'd like to remove fileExistsAtPath. Considering it...
-// You may implement fileExistsAtPath:isDirectory: and contentsAtPath: instead
-// of attributesOfItemAtPath:. If attributesOfItemAtPath: does not set
-// NSFileType then this method is required.
-- (BOOL)fileExistsAtPath:(NSString *)path isDirectory:(BOOL *)isDirectory;
-
 // Returns a dictionary of attributes at the given path. It is required to 
 // return at least the NSFileType attribute. You may omit the NSFileSize
 // attribute if contentsAtPath: is implemented, although this is less efficient.
