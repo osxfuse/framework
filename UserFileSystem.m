@@ -52,7 +52,7 @@ typedef enum {
 - (void)mount:(NSDictionary *)args;
 - (void)waitUntilMounted;
 
-- (UInt16)finderFlagsForPath:(NSString *)path;
+- (UInt16)finderFlagsAtPath:(NSString *)path;
 - (BOOL)hasCustomIconAtPath:(NSString *)path;
 - (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath;
 - (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath;
@@ -219,7 +219,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Finder Info, Resource Forks and HFS headers
 
-- (UInt16)finderFlagsForPath:(NSString *)path {
+- (UInt16)finderFlagsAtPath:(NSString *)path {
   UInt16 flags = 0;
 
   // If a directory icon, we'll make invisible and update the path to parent.
@@ -227,17 +227,17 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     flags |= kIsInvisible;
   }
 
-  if ([delegate_ respondsToSelector:@selector(finderFlagsForPath:)]) {
-    flags |= [delegate_ finderFlagsForPath:path];
-  } else if ([delegate_ respondsToSelector:@selector(iconDataForPath:)] &&
-             [delegate_ iconDataForPath:path] != nil) {
+  if ([delegate_ respondsToSelector:@selector(finderFlagsAtPath:)]) {
+    flags |= [delegate_ finderFlagsAtPath:path];
+  } else if ([delegate_ respondsToSelector:@selector(iconDataAtPath:)] &&
+             [delegate_ iconDataAtPath:path] != nil) {
     flags |= kHasCustomIcon;
   }
   return flags;
 }
 
 - (BOOL)hasCustomIconAtPath:(NSString *)path {
-  UInt16 flags = [self finderFlagsForPath:path];
+  UInt16 flags = [self finderFlagsAtPath:path];
   return (flags & kHasCustomIcon) == kHasCustomIcon;
 }
 
@@ -272,8 +272,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     url = [delegate_ URLContentOfWeblocAtPath:path];
   }
   NSData* imageData = nil;
-  if ([delegate_ respondsToSelector:@selector(iconDataForPath:)]) {
-    imageData = [delegate_ iconDataForPath:path];
+  if ([delegate_ respondsToSelector:@selector(iconDataAtPath:)]) {
+    imageData = [delegate_ iconDataAtPath:path];
   }
   if (imageData || url) {
     GMResourceFork* fork = [GMResourceFork resourceFork];
@@ -302,7 +302,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 // On 10.5 and (hopefully) above, the Finder will end up using the extended
 // attributes and so we won't need to serve ._ files. 
 - (NSData *)appleDoubleContentsAtPath:(NSString *)path {
-  UInt16 flags = [self finderFlagsForPath:path];
+  UInt16 flags = [self finderFlagsAtPath:path];
  
   // We treat the ._ for a directory and it's ._Icon\r file the same. This means
   // that we'll put extra resource-fork information in directory's ._ file even 
@@ -793,15 +793,24 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Extended Attributes
 
-- (NSData *)valueOfExtendedAttribute:(NSString *)name forPath:(NSString *)path
+- (NSArray *)extendedAttributesOfItemAtPath:path error:(NSError **)error {
+  if ([delegate_ respondsToSelector:@selector(extendedAttributesOfItemAtPath:error:)]) {
+    return [delegate_ extendedAttributesOfItemAtPath:path error:error];
+  }
+  *error = [UserFileSystem errorWithCode:ENOTSUP];
+  return nil;
+}
+
+- (NSData *)valueOfExtendedAttribute:(NSString *)name 
+                        ofItemAtPath:(NSString *)path
                                error:(NSError **)error {
   NSData* data = nil;
-  if ([delegate_ respondsToSelector:@selector(valueOfExtendedAttribute:forPath:error:)]) {
-    data = [delegate_ valueOfExtendedAttribute:name forPath:path error:error];
+  if ([delegate_ respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
+    data = [delegate_ valueOfExtendedAttribute:name ofItemAtPath:path error:error];
   }
   if (data == nil) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
-      int flags = [self finderFlagsForPath:path];
+      int flags = [self finderFlagsAtPath:path];
       data = [GMFinderInfo finderInfoWithFinderFlags:flags];
     } else if ([name isEqualToString:@"com.apple.ResourceFork"]) {
       [self isDirectoryIconAtPath:path dirPath:&path];
@@ -819,27 +828,19 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (BOOL)setExtendedAttribute:(NSString *)name 
-                     forPath:(NSString *)path 
+                ofItemAtPath:(NSString *)path 
                        value:(NSData *)value
                        flags:(int) flags
                        error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(setExtendedAttribute:forPath:value:flags:error:)]) {
+  if ([delegate_ respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
     return [delegate_ setExtendedAttribute:name 
-                                   forPath:path 
+                              ofItemAtPath:path 
                                      value:value
                                      flags:flags
                                      error:error];
   }  
   *error = [UserFileSystem errorWithCode:ENOTSUP];
   return NO;
-}
-
-- (NSArray *)extendedAttributesForPath:path error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(extendedAttributesForPath:error:)]) {
-    return [delegate_ extendedAttributesForPath:path error:error];
-  }
-  *error = [UserFileSystem errorWithCode:ENOTSUP];
-  return nil;
 }
 
 #pragma mark FUSE Operations
@@ -1168,7 +1169,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
     NSData *data = [fs valueOfExtendedAttribute:[NSString stringWithUTF8String:name]
-                                        forPath:[NSString stringWithUTF8String:path]
+                                   ofItemAtPath:[NSString stringWithUTF8String:path]
                                           error:&error];
     if (data != nil) {
       ret = [data length];  // default to returning size of buffer.
@@ -1197,7 +1198,7 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
     if ([fs setExtendedAttribute:[NSString stringWithUTF8String:name]
-                         forPath:[NSString stringWithUTF8String:path]
+                    ofItemAtPath:[NSString stringWithUTF8String:path]
                            value:[NSData dataWithBytes:value length:size]
                            flags:flags
                            error:&error]) {
@@ -1219,8 +1220,8 @@ static int fusefm_listxattr(const char *path, char *list, size_t size)
     NSError* error = nil;
     UserFileSystem* fs = [UserFileSystem currentFS];
     NSArray* attributeNames =
-      [fs extendedAttributesForPath:[NSString stringWithUTF8String:path]
-                              error:&error];
+      [fs extendedAttributesOfItemAtPath:[NSString stringWithUTF8String:path]
+                                   error:&error];
     if (attributeNames != nil) {
       char zero = 0;
       NSMutableData* data = [NSMutableData dataWithCapacity:size];  
