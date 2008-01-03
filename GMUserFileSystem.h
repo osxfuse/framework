@@ -29,16 +29,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ================================================================
 //
-//  UserFileSystem.h
+//  GMUserFileSystem.h
 //
 //  Created by ted on 12/29/07.
 //  Based on FUSEFileSystem originally by alcor.
 //
 #import <Foundation/Foundation.h>
 
-@interface UserFileSystem : NSObject {
+@interface GMUserFileSystem : NSObject {
   NSString* mountPath_;
-  int status_;  // Internal UserFileSystemStatus enum value.
+  int status_;  // Internal GMUserFileSystemStatus enum value.
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
   BOOL shouldListDoubleFiles_;  // Should directory listings contain ._ files?
   id delegate_;
@@ -52,7 +52,7 @@
 // Mount the filesystem at the given path. The set of available options can
 // be found at:  http://code.google.com/p/macfuse/wiki/OPTIONS
 // For example, to turn on debug output add @"debug" to the options NSArray.
-// If the mount fails, a kUserFileSystemMountFailed notification will be posted
+// If the mount fails, a kGMUserFileSystemMountFailed notification will be posted
 // to the default notification center. See Notifications below.
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options;
@@ -64,7 +64,7 @@
 //  For debug output: shouldForeground=YES, detachNewThread=NO
 //  For a daemon+runloop:  shouldForeground=NO, detachNewThread=YES
 //    - NOTE: I've never tried daemon+runloop; maybe it doesn't make sense?
-// If the mount fails, a kUserFileSystemMountFailed notification will be posted 
+// If the mount fails, a kGMUserFileSystemMountFailed notification will be posted 
 // to the default notification center. See Notifications below.
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options
@@ -85,31 +85,31 @@
 
 // Notifications
 //
-// The UserFileSystem will post lifecycle notifications to the defaultCenter.
-// Since the underlying UserFileSystem implementation is multi-threaded, you 
+// The GMUserFileSystem will post lifecycle notifications to the defaultCenter.
+// Since the underlying GMUserFileSystem implementation is multi-threaded, you 
 // should assume that notifications will not be posted on the main thread. The
-// object will always be the UserFileSystem* and the userInfo will always
+// object will always be the GMUserFileSystem* and the userInfo will always
 // contain at least the following:
 //   @"mountPath" -> NSString* that is the mount path
 
 // Notification sent when the mountAtPath operation fails. The userInfo will
 // contain an @"error" key with an NSError*.
-extern NSString* const kUserFileSystemMountFailed;
+extern NSString* const kGMUserFileSystemMountFailed;
 
 // Notification sent after the filesystem is successfully mounted.
-extern NSString* const kUserFileSystemDidMount;
+extern NSString* const kGMUserFileSystemDidMount;
 
 // Notification sent after the filesystem is successfully unmounted.
-extern NSString* const kUserFileSystemDidUnmount;
+extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark -
 
 #pragma mark FileSystemHandle Delegate Protocols
 
-// For UserFileSystemOperations that return a Handle, the handle may implement
-// all or part of the UserFileSystemhandleOperations protocol.
+// For GMUserFileSystemOperations that return a Handle, the handle may implement
+// all or part of the GMUserFileSystemhandleOperations protocol.
 
-@interface NSObject (UserFileSystemHandleOperations)
+@interface NSObject (GMUserFileSystemHandleOperations)
 
 - (int)readToBuffer:(char *)buffer 
                size:(size_t)size 
@@ -125,19 +125,19 @@ extern NSString* const kUserFileSystemDidUnmount;
 
 #pragma mark Delegate Protocols
 
-// The UserFileSystem's delegate can implement any of the below protocols.
+// The GMUserFileSystem's delegate can implement any of the below protocols.
 // In most cases you can selectively choose which methods of a protocol to 
 // implement.
 
-@interface NSObject (UserFileSystemLifecycle)
+@interface NSObject (GMUserFileSystemLifecycle)
 
 - (void)willMount;
 - (void)willUnmount;
 
 @end
 
-@interface NSObject (UserFileSystemResourceForks)
-// Implementing any UserFileSystemResourceForks method turns on automatic 
+@interface NSObject (GMUserFileSystemResourceForks)
+// Implementing any GMUserFileSystemResourceForks method turns on automatic 
 // handling of FinderInfo and ResourceForks. In 10.5 and later these are 
 // provided via extended attributes while in 10.4 we use "._" files.
 
@@ -156,7 +156,7 @@ extern NSString* const kUserFileSystemDidUnmount;
 
 @end
 
-@interface NSObject (UserFileSystemOperations)
+@interface NSObject (GMUserFileSystemOperations)
 // These are the core methods that your filesystem needs to implement. Unless
 // otherwise noted, they typically should behave like the NSFileManager 
 // equivalent. However, the error codes that they return should correspond to

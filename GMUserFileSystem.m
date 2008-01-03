@@ -29,12 +29,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ================================================================
 //
-//  UserFileSystem.m
+//  GMUserFileSystem.m
 //
 //  Created by ted on 12/29/07.
 //  Based on FUSEFileSystem originally by alcor.
 //
-#import "UserFileSystem.h"
+#import "GMUserFileSystem.h"
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
@@ -60,22 +60,22 @@
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
-EXPORT NSString* const kUserFileSystemMountFailed = @"kUserFileSystemMountFailed";
-EXPORT NSString* const kUserFileSystemDidMount = @"kUserFileSystemDidMount";
-EXPORT NSString* const kUserFileSystemDidUnmount = @"kUserFileSystemDidUnmount";
+EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
+EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
+EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
 
 typedef enum {
-  UserFileSystem_NOT_MOUNTED,   // Not mounted.
-  UserFileSystem_MOUNTING,      // In the process of mounting.
-  UserFileSystem_INITIALIZING,  // Almost done mounting.
-  UserFileSystem_MOUNTED,       // Confirmed to be mounted.
-  UserFileSystem_UNMOUNTING,    // In the process of unmounting.
-  UserFileSystem_FAILURE,       // Failed state; probably a mount failure.
-} UserFileSystemStatus;
+  GMUserFileSystem_NOT_MOUNTED,   // Not mounted.
+  GMUserFileSystem_MOUNTING,      // In the process of mounting.
+  GMUserFileSystem_INITIALIZING,  // Almost done mounting.
+  GMUserFileSystem_MOUNTED,       // Confirmed to be mounted.
+  GMUserFileSystem_UNMOUNTING,    // In the process of unmounting.
+  GMUserFileSystem_FAILURE,       // Failed state; probably a mount failure.
+} GMUserFileSystemStatus;
 
-@interface UserFileSystem (UserFileSystemPrivate)
+@interface GMUserFileSystem (GMUserFileSystemPrivate)
 
-+ (UserFileSystem *)currentFS;
++ (GMUserFileSystem *)currentFS;
 
 - (void)mount:(NSDictionary *)args;
 - (void)waitUntilMounted;
@@ -99,7 +99,7 @@ typedef enum {
 
 @end
 
-@implementation UserFileSystem
+@implementation GMUserFileSystem
 
 - (id)init {
   return [self initWithDelegate:nil isThreadSafe:NO];
@@ -107,7 +107,7 @@ typedef enum {
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
   if ((self = [super init])) {
-    status_ = UserFileSystem_NOT_MOUNTED;
+    status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
     delegate_ = delegate;
     
@@ -170,7 +170,7 @@ typedef enum {
 }
 
 - (void)unmount {
-  if (status_ == UserFileSystem_MOUNTED) {
+  if (status_ == GMUserFileSystem_MOUNTED) {
     NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
     NSTask* unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
                                                    arguments:args];
@@ -182,10 +182,10 @@ typedef enum {
   return [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
 }
 
-+ (UserFileSystem *)currentFS {
++ (GMUserFileSystem *)currentFS {
   struct fuse_context* context = fuse_get_context();
   assert(context);
-  return (UserFileSystem *)context->private_data;
+  return (GMUserFileSystem *)context->private_data;
 }
 
 #define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2, u_int32_t)
@@ -201,7 +201,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                     FUSEDEVIOCGETHANDSHAKECOMPLETE, 
                     &handShakeComplete);
     if (ret == 0 && handShakeComplete) {
-      status_ = UserFileSystem_MOUNTED;
+      status_ = GMUserFileSystem_MOUNTED;
       
       // Successfully mounted, so post notification.
       NSDictionary* userInfo = 
@@ -209,7 +209,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
          mountPath_, @"mountPath",
          nil, nil];
       NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-      [center postNotificationName:kUserFileSystemDidMount object:self
+      [center postNotificationName:kGMUserFileSystemDidMount object:self
                           userInfo:userInfo];
       [pool release];
       return;
@@ -223,11 +223,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)fuseInit {
-  status_ = UserFileSystem_INITIALIZING;
+  status_ = GMUserFileSystem_INITIALIZING;
   
   // The mount point won't actually show up until this winds its way
   // back through the kernel after this routine returns. In order to post
-  // the kUserFileSystemDidMount notification we start a new thread that will
+  // the kGMUserFileSystemDidMount notification we start a new thread that will
   // poll until it is mounted.
   [NSThread detachNewThreadSelector:@selector(waitUntilMounted) 
                            toTarget:self 
@@ -238,14 +238,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([delegate_ respondsToSelector:@selector(willUnmount)]) {
     [delegate_ willUnmount];
   }
-  status_ = UserFileSystem_UNMOUNTING;
+  status_ = GMUserFileSystem_UNMOUNTING;
 
   NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
      mountPath_, @"mountPath",
      nil, nil];
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-  [center postNotificationName:kUserFileSystemDidUnmount object:self
+  [center postNotificationName:kGMUserFileSystemDidUnmount object:self
                       userInfo:userInfo];
 }
 
@@ -416,7 +416,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else if ([fileType isEqualToString:NSFileTypeSymbolicLink]) {
     stbuf->st_mode |= S_IFLNK;
   } else {
-    *error = [UserFileSystem errorWithCode:EFTYPE];
+    *error = [GMUserFileSystem errorWithCode:EFTYPE];
     NSLog(@"Illegal file type: '%@' at path '%@'", fileType, path);
     return NO;
   }
@@ -481,7 +481,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [delegate_ moveItemAtPath:source toPath:destination error:error];
   }  
   
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
 
@@ -492,7 +492,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [delegate_ removeItemAtPath:path error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
 
@@ -505,7 +505,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [delegate_ createDirectoryAtPath:path attributes:attributes error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
 
@@ -518,7 +518,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                              outHandle:outHandle error:error];
   }  
 
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
 
@@ -533,7 +533,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [delegate_ linkItemAtPath:path toPath:otherPath error:error];
   }  
 
-  *error = [UserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
   return NO;
 }
 
@@ -549,7 +549,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                          error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
   return NO; 
 }
 
@@ -559,7 +559,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [delegate_ destinationOfSymbolicLinkAtPath:path error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:ENOENT];
+  *error = [GMUserFileSystem errorWithCode:ENOENT];
   return nil;
 }
 
@@ -591,7 +591,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                            outHandle:outHandle 
                                error:error];
   }
-  *error = [UserFileSystem errorWithCode:ENOENT];
+  *error = [GMUserFileSystem errorWithCode:ENOENT];
   return NO;
 }
 
@@ -618,7 +618,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
              [handle respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
     return [handle readToBuffer:buffer size:size offset:offset error:error];
   }
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return -1;
 }
 
@@ -640,7 +640,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [handle writeFromBuffer:buffer size:size offset:offset error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return -1; 
 }
 
@@ -653,7 +653,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                    error:error];
   }
 
-  *error = [UserFileSystem errorWithCode:EACCES];
+  *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
 
@@ -713,7 +713,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [delegate_ attributesOfItemAtPath:path error:error];
     if (!customAttribs) {
       if (!(*error)) {
-        *error = [UserFileSystem errorWithCode:ENOENT];
+        *error = [GMUserFileSystem errorWithCode:ENOENT];
       }
       return nil;
     }
@@ -727,7 +727,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [attributes setObject:[NSNumber numberWithLongLong:0] forKey:NSFileSize];
       return attributes;
     }
-    *error = [UserFileSystem errorWithCode:ENOENT];
+    *error = [GMUserFileSystem errorWithCode:ENOENT];
     return nil;
   }
   
@@ -740,7 +740,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                      forKey:NSFileSize];
       return attributes;
     }
-    *error = [UserFileSystem errorWithCode:ENOENT];
+    *error = [GMUserFileSystem errorWithCode:ENOENT];
     return nil;
   }
 
@@ -750,7 +750,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [delegate_ respondsToSelector:@selector(contentsForPath:)]) {
     NSData* data = [delegate_ contentsAtPath:path];
     if (data == nil) {
-      *error = [UserFileSystem errorWithCode:ENOENT];
+      *error = [GMUserFileSystem errorWithCode:ENOENT];
       return nil;
     }
     [attributes setObject:[NSNumber numberWithLongLong:[data length]]
@@ -778,7 +778,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [delegate_ attributesOfFileSystemForPath:path error:error];    
     if (!customAttribs) {
       if (!(*error)) {
-        *error = [UserFileSystem errorWithCode:ENODEV];
+        *error = [GMUserFileSystem errorWithCode:ENODEV];
       }
       return nil;
     }
@@ -793,7 +793,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([delegate_ respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
     return [delegate_ setAttributes:attributes ofItemAtPath:path error:error];
   }  
-  *error = [UserFileSystem errorWithCode:ENODEV];
+  *error = [GMUserFileSystem errorWithCode:ENODEV];
   return NO;
 }
 
@@ -803,7 +803,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([delegate_ respondsToSelector:@selector(extendedAttributesOfItemAtPath:error:)]) {
     return [delegate_ extendedAttributesOfItemAtPath:path error:error];
   }
-  *error = [UserFileSystem errorWithCode:ENOTSUP];
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return nil;
 }
 
@@ -822,13 +822,13 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [self isDirectoryIconAtPath:path dirPath:&path];
       data = [self resourceForkContentsAtPath:path];
       if (data == nil) {
-        *error = [UserFileSystem errorWithCode:ENOATTR];
+        *error = [GMUserFileSystem errorWithCode:ENOATTR];
         return nil;
       }
     }    
   }
   if (data == nil) {
-    *error = [UserFileSystem errorWithCode:ENOTSUP];
+    *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   }
   return data;
 }
@@ -845,7 +845,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                      flags:flags
                                      error:error];
   }  
-  *error = [UserFileSystem errorWithCode:ENOTSUP];
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return NO;
 }
 
@@ -866,7 +866,7 @@ static int fusefm_statfs(const char* path, struct statvfs* stbuf) {
   @try {
     memset(stbuf, 0, sizeof(struct statvfs));
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs fillStatvfsBuffer:stbuf 
                       forPath:[NSString stringWithUTF8String:path]
                         error:&error]) {
@@ -886,7 +886,7 @@ static int fusefm_getattr(const char *path, struct stat *stbuf) {
   @try {
     memset(stbuf, 0, sizeof(struct stat));
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs fillStatBuffer:stbuf 
                    forPath:[NSString stringWithUTF8String:path]
                      error:&error]) {
@@ -912,7 +912,7 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSArray *contents = 
     [fs contentsOfDirectoryAtPath:[NSString stringWithUTF8String:path] 
                             error:&error];
@@ -941,7 +941,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
     id object = nil;
     NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
     [attribs setObject:[NSNumber numberWithLong:mode] forKey:NSFilePosixPermissions];
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
                   attributes:attribs
                    outHandle:&object
@@ -967,7 +967,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
   @try {
     id object = nil;
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs openFileAtPath:[NSString stringWithUTF8String:path]
                       mode:fi->flags
                  outHandle:&object
@@ -990,7 +990,7 @@ static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   @try {
     id object = (id)(int)fi->fh;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     [fs releaseFileAtPath:[NSString stringWithUTF8String:path] handle:object];
     if (object) {
       [object release]; 
@@ -1007,7 +1007,7 @@ static int fusefm_truncate(const char* path, off_t offset) {
   
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
                         offset:offset
                          error:&error]) {
@@ -1037,7 +1037,7 @@ static int fusefm_chown(const char* path, uid_t uid, gid_t gid) {
     [attribs setObject:[NSNumber numberWithLong:gid] 
                 forKey:NSFileGroupOwnerAccountID];
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
              ofItemAtPath:[NSString stringWithUTF8String:path]
                     error:&error]) {
@@ -1060,7 +1060,7 @@ static int fusefm_chmod(const char* path, mode_t mode) {
     [attribs setObject:[NSNumber numberWithLong:mode] 
                 forKey:NSFilePosixPermissions];
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
              ofItemAtPath:[NSString stringWithUTF8String:path]
                     error:&error]) {
@@ -1082,7 +1082,7 @@ static int fusefm_utimens(const char* path, const struct timespec tv[2]) {
     NSDate* modification = [NSDate dateWithTimeIntervalSince1970:tv[1].tv_sec];
     [attribs setObject:modification forKey:NSFileModificationDate];
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
              ofItemAtPath:[NSString stringWithUTF8String:path]
                     error:&error]) {
@@ -1109,7 +1109,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
   
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
                        handle:(id)(int)fi->fh
                        buffer:buf
@@ -1130,7 +1130,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
 
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
                       handle:(id)(int)fi->fh
                       buffer:buf
@@ -1152,7 +1152,7 @@ static int fusefm_readlink(const char *path, char *buf, size_t size)
   @try {
     NSString* linkPath = [NSString stringWithUTF8String:path];
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSString *pathContent = [fs destinationOfSymbolicLinkAtPath:linkPath
                                                           error:&error];
     if (pathContent != nil) {
@@ -1173,7 +1173,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
   int ret = -ENOATTR;
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSData *data = [fs valueOfExtendedAttribute:[NSString stringWithUTF8String:name]
                                    ofItemAtPath:[NSString stringWithUTF8String:path]
                                           error:&error];
@@ -1201,7 +1201,7 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
   int ret = -EPERM;
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setExtendedAttribute:[NSString stringWithUTF8String:name]
                     ofItemAtPath:[NSString stringWithUTF8String:path]
                            value:[NSData dataWithBytes:value length:size]
@@ -1223,7 +1223,7 @@ static int fusefm_listxattr(const char *path, char *list, size_t size)
   int ret = -ENOTSUP;
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSArray* attributeNames =
       [fs extendedAttributesOfItemAtPath:[NSString stringWithUTF8String:path]
                                    error:&error];
@@ -1258,7 +1258,7 @@ static int fusefm_rename(const char* path, const char* toPath) {
     NSString* source = [NSString stringWithUTF8String:path];
     NSString* destination = [NSString stringWithUTF8String:toPath];
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs moveItemAtPath:source toPath:destination error:&error]) {
       ret = 0;  // Success!
     } else {
@@ -1277,7 +1277,7 @@ static int fusefm_mkdir(const char* path, mode_t mode) {
   @try {
     NSError* error = nil;
     // TODO: Create proper attributes dictionary from mode_t.
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
                        attributes:nil
                             error:(NSError **)error]) {
@@ -1298,7 +1298,7 @@ static int fusefm_unlink(const char* path) {
   int ret = -EACCES;
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
                        error:&error]) {
       ret = 0;  // Success!
@@ -1317,7 +1317,7 @@ static int fusefm_rmdir(const char* path) {
 
   @try {
     NSError* error = nil;
-    UserFileSystem* fs = [UserFileSystem currentFS];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
                        error:&error]) {
       ret = 0;  // Success!
@@ -1333,7 +1333,7 @@ static int fusefm_rmdir(const char* path) {
 static void* fusefm_init(struct fuse_conn_info* conn) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  UserFileSystem* fs = [UserFileSystem currentFS];
+  GMUserFileSystem* fs = [GMUserFileSystem currentFS];
   [fs retain];
   @try {
     [fs fuseInit];
@@ -1347,7 +1347,7 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
 static void fusefm_destroy(void* private_data) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  UserFileSystem* fs = (UserFileSystem *)private_data;
+  GMUserFileSystem* fs = (GMUserFileSystem *)private_data;
   @try {
     [fs fuseDestroy];
   }
@@ -1390,7 +1390,7 @@ static struct fuse_operations fusefm_oper = {
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  assert(status_ == UserFileSystem_NOT_MOUNTED);
+  assert(status_ == GMUserFileSystem_NOT_MOUNTED);
 
   [mountPath_ autorelease];
   mountPath_ = [[args objectForKey:@"mountPath"] retain];
@@ -1437,18 +1437,18 @@ static struct fuse_operations fusefm_oper = {
   if ([delegate_ respondsToSelector:@selector(willMount)]) {
     [delegate_ willMount];
   }
-  status_ = UserFileSystem_MOUNTING;
+  status_ = GMUserFileSystem_MOUNTING;
   [pool release];
   int ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
 
   pool = [[NSAutoreleasePool alloc] init];
 
-  if (ret != 0 || status_ == UserFileSystem_MOUNTING) {
+  if (ret != 0 || status_ == GMUserFileSystem_MOUNTING) {
     // If we returned successfully from fuse_main while we still think we are 
     // mounting then an error must have occured during mount.
-    status_ = UserFileSystem_FAILURE;
+    status_ = GMUserFileSystem_FAILURE;
 
-    NSError* error = [NSError errorWithDomain:@"UserFileSystemErrorDomain"
+    NSError* error = [NSError errorWithDomain:@"GMUserFileSystemErrorDomain"
                                          code:(ret == 0) ? -1 : ret
                                      userInfo:nil];
     
@@ -1458,10 +1458,10 @@ static struct fuse_operations fusefm_oper = {
      error, @"error",
      nil, nil];
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-    [center postNotificationName:kUserFileSystemMountFailed object:self
+    [center postNotificationName:kGMUserFileSystemMountFailed object:self
                         userInfo:userInfo];
   } else {
-    status_ = UserFileSystem_NOT_MOUNTED;
+    status_ = GMUserFileSystem_NOT_MOUNTED;
   }
 
   [pool release];

@@ -15,10 +15,10 @@
 		FF4337500D27697A00554C02 /* GMResourceFork.h in Headers */ = {isa = PBXBuildFile; fileRef = FF43374A0D27697A00554C02 /* GMResourceFork.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FF4337510D27697A00554C02 /* GMResourceFork.m in Sources */ = {isa = PBXBuildFile; fileRef = FF43374B0D27697A00554C02 /* GMResourceFork.m */; };
 		FF999D040D25A4CE00920D03 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
-		FFB641490D27739E00CAA876 /* UserFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = FFB641470D27739E00CAA876 /* UserFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FFB6414A0D27739E00CAA876 /* UserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFB641480D27739E00CAA876 /* UserFileSystem.m */; };
 		FFB641830D2785E500CAA876 /* NSData+BufferOffset.h in Headers */ = {isa = PBXBuildFile; fileRef = FFB641810D2785E500CAA876 /* NSData+BufferOffset.h */; };
 		FFB641840D2785E500CAA876 /* NSData+BufferOffset.m in Sources */ = {isa = PBXBuildFile; fileRef = FFB641820D2785E500CAA876 /* NSData+BufferOffset.m */; };
+		FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FFC1BF7B0D2D81D5009D8847 /* GMUserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,10 +33,10 @@
 		FF4337490D27697A00554C02 /* GMFinderInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMFinderInfo.m; sourceTree = "<group>"; };
 		FF43374A0D27697A00554C02 /* GMResourceFork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMResourceFork.h; sourceTree = "<group>"; };
 		FF43374B0D27697A00554C02 /* GMResourceFork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMResourceFork.m; sourceTree = "<group>"; };
-		FFB641470D27739E00CAA876 /* UserFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserFileSystem.h; sourceTree = "<group>"; };
-		FFB641480D27739E00CAA876 /* UserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserFileSystem.m; sourceTree = "<group>"; };
 		FFB641810D2785E500CAA876 /* NSData+BufferOffset.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+BufferOffset.h"; sourceTree = "<group>"; };
 		FFB641820D2785E500CAA876 /* NSData+BufferOffset.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+BufferOffset.m"; sourceTree = "<group>"; };
+		FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMUserFileSystem.h; sourceTree = "<group>"; };
+		FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMUserFileSystem.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,8 +92,8 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				FFB641470D27739E00CAA876 /* UserFileSystem.h */,
-				FFB641480D27739E00CAA876 /* UserFileSystem.m */,
+				FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */,
+				FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */,
 				FF4337460D27697A00554C02 /* GMAppleDouble.h */,
 				FF4337470D27697A00554C02 /* GMAppleDouble.m */,
 				FF4337480D27697A00554C02 /* GMFinderInfo.h */,
@@ -139,8 +139,8 @@
 				FF43374C0D27697A00554C02 /* GMAppleDouble.h in Headers */,
 				FF43374E0D27697A00554C02 /* GMFinderInfo.h in Headers */,
 				FF4337500D27697A00554C02 /* GMResourceFork.h in Headers */,
-				FFB641490D27739E00CAA876 /* UserFileSystem.h in Headers */,
 				FFB641830D2785E500CAA876 /* NSData+BufferOffset.h in Headers */,
+				FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,8 +203,8 @@
 				FF43374D0D27697A00554C02 /* GMAppleDouble.m in Sources */,
 				FF43374F0D27697A00554C02 /* GMFinderInfo.m in Sources */,
 				FF4337510D27697A00554C02 /* GMResourceFork.m in Sources */,
-				FFB6414A0D27739E00CAA876 /* UserFileSystem.m in Sources */,
 				FFB641840D2785E500CAA876 /* NSData+BufferOffset.m in Sources */,
+				FFC1BF7B0D2D81D5009D8847 /* GMUserFileSystem.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
