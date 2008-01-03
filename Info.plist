@@ -11,7 +11,7 @@
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
-	<string>com.google.MacFUSEFramework</string>
+	<string>com.google.MacFUSE</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
@@ -19,8 +19,10 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
-	<key>NSPrincipalClass</key>
-	<string></string>
+	<string>MACFUSE_CORE_VERSION</string>
+	<key>CFBundleShortVersionString</key>
+	<string>MACFUSE_CORE_VERSION</string>
+	<key>CFBundleGetInfoString</key>
+	<string>MacFUSE Framework</string>
 </dict>
 </plist>

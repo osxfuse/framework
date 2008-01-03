@@ -268,15 +268,19 @@
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = "MACFUSE_CORE_VERSION=$(MACFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I/usr/local/include",
+					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
 				);
 				OTHER_LDFLAGS = (
 					"-lfuse",
-					"-L/usr/local/lib",
+					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -296,15 +300,19 @@
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = "MACFUSE_CORE_VERSION=$(MACFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I/usr/local/include",
+					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
 				);
 				OTHER_LDFLAGS = (
 					"-lfuse",
-					"-L/usr/local/lib",
+					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
