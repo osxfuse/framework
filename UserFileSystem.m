@@ -1,11 +1,39 @@
+// ================================================================
+// Copyright (c) 2007, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above
+//   copyright notice, this list of conditions and the following disclaimer
+//   in the documentation and/or other materials provided with the
+//   distribution.
+// * Neither the name of Google Inc. nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// ================================================================
 //
 //  UserFileSystem.m
 //
 //  Created by ted on 12/29/07.
 //  Based on FUSEFileSystem originally by alcor.
-//  Copyright 2007 Google. All rights reserved.
 //
-
 #import "UserFileSystem.h"
 
 #define FUSE_USE_VERSION 26
@@ -73,6 +101,10 @@ typedef enum {
 
 @implementation UserFileSystem
 
+- (id)init {
+  return [self initWithDelegate:nil isThreadSafe:NO];
+}
+
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
   if ((self = [super init])) {
     status_ = UserFileSystem_NOT_MOUNTED;
@@ -115,7 +147,7 @@ typedef enum {
   [self mountAtPath:mountPath
         withOptions:options
    shouldForeground:YES
-    detachNewThread:YES];   
+    detachNewThread:YES];
 }
 
 - (void)mountAtPath:(NSString *)mountPath 
@@ -843,7 +875,7 @@ static int fusefm_statfs(const char* path, struct statvfs* stbuf) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -863,7 +895,7 @@ static int fusefm_getattr(const char *path, struct stat *stbuf) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -895,7 +927,7 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -922,7 +954,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -948,7 +980,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -964,7 +996,7 @@ static int fusefm_release(const char *path, struct fuse_file_info *fi) {
       [object release]; 
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return 0;
 }
@@ -984,7 +1016,7 @@ static int fusefm_truncate(const char* path, off_t offset) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   
   [pool release];
   return ret;
@@ -1014,7 +1046,7 @@ static int fusefm_chown(const char* path, uid_t uid, gid_t gid) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1037,7 +1069,7 @@ static int fusefm_chmod(const char* path, mode_t mode) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1059,7 +1091,7 @@ static int fusefm_utimens(const char* path, const struct timespec tv[2]) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1086,7 +1118,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
                         error:&error];
     MAYBE_USE_ERROR(ret, error);
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1107,7 +1139,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
                        error:&error];
     MAYBE_USE_ERROR(ret, error);
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1130,7 +1162,7 @@ static int fusefm_readlink(const char *path, char *buf, size_t size)
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1158,8 +1190,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) {
-  }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1181,7 +1212,7 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1214,7 +1245,7 @@ static int fusefm_listxattr(const char *path, char *list, size_t size)
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1234,7 +1265,7 @@ static int fusefm_rename(const char* path, const char* toPath) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;  
 }
@@ -1257,7 +1288,7 @@ static int fusefm_mkdir(const char* path, mode_t mode) {
       }
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1275,7 +1306,7 @@ static int fusefm_unlink(const char* path) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1294,7 +1325,7 @@ static int fusefm_rmdir(const char* path) {
       MAYBE_USE_ERROR(ret, error);
     }
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [pool release];
   return ret;
 }
@@ -1307,7 +1338,7 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
   @try {
     [fs fuseInit];
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
 
   [pool release];
   return fs;
@@ -1320,7 +1351,7 @@ static void fusefm_destroy(void* private_data) {
   @try {
     [fs fuseDestroy];
   }
-  @catch (NSException* e) { }
+  @catch (id exception) { }
   [fs release];
 
   [pool release];
@@ -1394,6 +1425,7 @@ static struct fuse_operations fusefm_oper = {
     }
   }
   [arguments addObject:mountPath_];
+  [args release];  // We don't need packaged up args any more.
   
   // Start Fuse Main
   int argc = [arguments count];
