@@ -700,10 +700,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else {
     [attributes setObject:NSFileTypeRegular forKey:NSFileType];
   }
-  
-  BOOL isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
+
+  // If this is an AppleDouble file, then we'll update path to be the original
+  // representative of that double file; i.e. /._baz -> /baz.
   BOOL isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
-  assert(!(isDirectoryIcon && isAppleDouble));
+  
+  // If the maybe-fixed-up path is a directoryIcon, we'll modify the path to
+  // refer to the parent directory and note that we are a directory icon.
+  BOOL isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
 
   // The delegate can override any of the above defaults by implementing the
   // attributesOfItemAtPath: selector and returning a custom dictionary.
@@ -721,7 +725,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
 
   // If this is a directory Icon\r then it is an empty file and we're done.
-  if (isDirectoryIcon) {
+  if (isDirectoryIcon && !isAppleDouble) {
     if ([self hasCustomIconAtPath:path]) {
       [attributes setObject:NSFileTypeRegular forKey:NSFileType];
       [attributes setObject:[NSNumber numberWithLongLong:0] forKey:NSFileSize];
@@ -730,7 +734,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     *error = [GMUserFileSystem errorWithCode:ENOENT];
     return nil;
   }
-  
+
   // If this is a ._ then we'll need to compute its size and we're done.
   if (isAppleDouble) {
     NSData* data = [self appleDoubleContentsAtPath:path];
