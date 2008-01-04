@@ -98,14 +98,14 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark -
 
-#pragma mark FileSystemHandle Delegate Protocol
+#pragma mark File Delegate Protocol
 
-// For GMUserFileSystemOperations that return a Handle, the handle may implement
-// all or part of the GMUserFileSystemHandleOperations protocol. For any method
-// that is implemented, the corresponding method will not be called on the
+// The openFileAtPath: and createFileAtPath: operations have fileDelegate as an
+// out-parameter. Any GMUserFileSystemFileDelegate method that the fileDelegate 
+// implements will be called instead of the corresponding method on the 
 // GMUserFileSystem's delegate.
 
-@interface NSObject (GMUserFileSystemHandleOperations)
+@interface NSObject (GMUserFileSystemFileDelegate)
 
 // bsd-equivalent: read
 - (int)readToBuffer:(char *)buffer 
@@ -125,7 +125,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 @end
 
-#pragma mark Delegate Protocols
+#pragma mark GMUserFileSystem Delegate Protocols
 
 // The GMUserFileSystem's delegate can implement any of the below protocols.
 // In most cases you can selectively choose which methods of a protocol to 
@@ -174,8 +174,89 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // - (NSData *)contentsAtPath:(NSString *)path;
 //
 // For a writeable filesystem, the Finder can be quite picky unless the majority
-// of these methods are implemented. You can safely skip hard-links, symbolic 
-// links, and extended attributes.
+// of these methods are implemented. However, you can safely skip hard-links, 
+// symbolic links, and extended attributes.
+
+#pragma mark Directory Contents
+
+- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error;
+
+#pragma mark Getting and Setting Attributes
+
+// Returns a dictionary of attributes at the given path. It is required to 
+// return at least the NSFileType attribute. You may omit the NSFileSize
+// attribute if contentsAtPath: is implemented, although this is less efficient.
+//
+// bsd-equivalent: stat
+- (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
+                                   error:(NSError **)error;
+
+// bsd-equivalent: statvfs
+- (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
+                                          error:(NSError **)error;
+
+// bsd-equivalent: chown, chmod, utimes
+- (BOOL)setAttributes:(NSDictionary *)attributes 
+         ofItemAtPath:(NSString *)path
+                error:(NSError **)error;
+
+#pragma mark File Contents
+
+// If contentsAtPath is implemented then you can skip open/release/read.
+// Return nil if the file does not exist at the given path.
+- (NSData *)contentsAtPath:(NSString *)path;
+
+// bsd-equivalent: open
+- (BOOL)openFileAtPath:(NSString *)path 
+                  mode:(int)mode
+          fileDelegate:(id *)fileDelegate
+                 error:(NSError **)error;
+
+// bsd-equivalent: close
+- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
+
+// This is only called if the fileDelegate is nil or does not implement the 
+// readToBuffer:size:offset:error: method.
+//
+// bsd-equivalent: read
+- (int)readFileAtPath:(NSString *)path 
+         fileDelegate:(id)fileDelegate
+               buffer:(char *)buffer 
+                 size:(size_t)size 
+               offset:(off_t)offset
+                error:(NSError **)error;
+
+// This is only called if the fileDelegate is nil or does not implement the 
+// writeFromBuffer:size:offset:error: method.
+//
+// bsd-equivalent: write
+- (int)writeFileAtPath:(NSString *)path 
+          fileDelegate:(id)fileDelegate 
+                buffer:(const char *)buffer
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
+
+// This is only called if the fileDelegate is nil or does not implement the 
+// truncateToOffset:error: method.
+//
+// bsd-equivalent: truncate
+- (BOOL)truncateFileAtPath:(NSString *)path 
+                    offset:(off_t)offset 
+                     error:(NSError **)error;
+
+#pragma mark Creating an Item
+
+// bsd-equivalent: mkdir
+- (BOOL)createDirectoryAtPath:(NSString *)path 
+                   attributes:(NSDictionary *)attributes
+                        error:(NSError **)error;
+
+// bsd-equivalent: creat
+- (BOOL)createFileAtPath:(NSString *)path 
+              attributes:(NSDictionary *)attributes
+            fileDelegate:(id *)fileDelegate
+                   error:(NSError **)error;
 
 #pragma mark Moving an Item
 
@@ -188,19 +269,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 // bsd-equivalent: rmdir, unlink
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error;
-
-#pragma mark Creating an Item
-
-// bsd-equivalent: mkdir
-- (BOOL)createDirectoryAtPath:(NSString *)path 
-                   attributes:(NSDictionary *)attributes
-                        error:(NSError **)error;
-
-// bsd-equivalent: creat
-- (BOOL)createFileAtPath:(NSString *)path 
-              attributes:(NSDictionary *)attributes
-               outHandle:(id *)outHandle
-                   error:(NSError **)error;
 
 #pragma mark Linking an Item
 
@@ -219,64 +287,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // bsd-equivalent: readlink
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
                                         error:(NSError **)error;
-
-#pragma mark File Contents
-
-// If contentsAtPath is implemented then you can skip open/release/read.
-// Return nil if the file does not exist at the given path.
-- (NSData *)contentsAtPath:(NSString *)path;
-
-// bsd-equivalent: open
-- (BOOL)openFileAtPath:(NSString *)path 
-                  mode:(int)mode
-             outHandle:(id *)outHandle
-                 error:(NSError **)error;
-
-// bsd-equivalent: close
-- (void)releaseFileAtPath:(NSString *)path handle:(id)handle;
-
-// bsd-equivalent: read
-- (int)readFileAtPath:(NSString *)path 
-               handle:(id)handle
-               buffer:(char *)buffer 
-                 size:(size_t)size 
-               offset:(off_t)offset
-                error:(NSError **)error;
-
-// bsd-equivalent: write
-- (int)writeFileAtPath:(NSString *)path 
-                handle:(id)handle 
-                buffer:(const char *)buffer
-                  size:(size_t)size 
-                offset:(off_t)offset
-                 error:(NSError **)error;
-
-// bsd-equivalent: truncate
-- (BOOL)truncateFileAtPath:(NSString *)path 
-                    offset:(off_t)offset 
-                     error:(NSError **)error;
-
-#pragma mark Directory Contents
-
-- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error;
-
-#pragma mark Getting and Setting Attributes
-
-// Returns a dictionary of attributes at the given path. It is required to 
-// return at least the NSFileType attribute. You may omit the NSFileSize
-// attribute if contentsAtPath: is implemented, although this is less efficient.
-// bsd-equivalent: stat
-- (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
-                                   error:(NSError **)error;
-
-// bsd-equivalent: statvfs
-- (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
-                                          error:(NSError **)error;
-
-// bsd-equivalent: chown, chmod, utimes
-- (BOOL)setAttributes:(NSDictionary *)attributes 
-         ofItemAtPath:(NSString *)path
-                error:(NSError **)error;
 
 #pragma mark Extended Attributes
 

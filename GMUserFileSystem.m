@@ -547,11 +547,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
-               outHandle:(id *)outHandle
+            fileDelegate:(id *)fileDelegate
                    error:(NSError **)error {
-  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:outHandle:error:)]) {
+  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
-                                        outHandle:outHandle error:error];
+                                     fileDelegate:fileDelegate error:error];
   }  
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -603,52 +603,52 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
-             outHandle:(id *)outHandle 
+          fileDelegate:(id *)fileDelegate 
                  error:(NSError **)error {
   // First see if it is an Icon\r or AppleDouble file that we handle.
   if ([self isDirectoryIconAtPath:path dirPath:nil]) {
-    *outHandle = [NSData data];
+    *fileDelegate = [NSData data];
     return YES;
   }
   NSString* realPath;
   if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
-    *outHandle = [self appleDoubleContentsAtPath:realPath];
-    return (*outHandle != nil);
+    *fileDelegate = [self appleDoubleContentsAtPath:realPath];
+    return (*fileDelegate != nil);
   }
   
   if ([[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
-    *outHandle = [[internal_ delegate] contentsAtPath:path];
-    if (*outHandle != nil) {
+    *fileDelegate = [[internal_ delegate] contentsAtPath:path];
+    if (*fileDelegate != nil) {
       return YES;
     }
-  } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:outHandle:error:)]) {
+  } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
     return [[internal_ delegate] openFileAtPath:path 
                                            mode:mode 
-                                      outHandle:outHandle 
+                                   fileDelegate:fileDelegate 
                                           error:error];
   }
   *error = [GMUserFileSystem errorWithCode:ENOENT];
   return NO;
 }
 
-- (void)releaseFileAtPath:(NSString *)path handle:(id)handle {
-  if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:handle:)]) {
-    [[internal_ delegate] releaseFileAtPath:path handle:handle];
+- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate {
+  if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
+    [[internal_ delegate] releaseFileAtPath:path fileDelegate:fileDelegate];
   }
 }
 
 - (int)readFileAtPath:(NSString *)path 
-               handle:(id)handle
+         fileDelegate:(id)fileDelegate
                buffer:(char *)buffer 
                  size:(size_t)size 
                offset:(off_t)offset
                 error:(NSError **)error {
-  if (handle != nil &&
-      [handle respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
-    return [handle readToBuffer:buffer size:size offset:offset error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:handle:buffer:size:offset:error:)]) {
+  if (fileDelegate != nil &&
+      [fileDelegate respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
+    return [fileDelegate readToBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
     return [[internal_ delegate] readFileAtPath:path
-                                         handle:handle
+                                   fileDelegate:fileDelegate
                                          buffer:buffer
                                            size:size
                                          offset:offset
@@ -659,17 +659,17 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (int)writeFileAtPath:(NSString *)path 
-                handle:(id)handle 
+          fileDelegate:(id)fileDelegate 
                 buffer:(const char *)buffer
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error {
-  if (handle != nil &&
-      [handle respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
-    return [handle writeFromBuffer:buffer size:size offset:offset error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:handle:buffer:size:offset:error:)]) {
+  if (fileDelegate != nil &&
+      [fileDelegate respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
+    return [fileDelegate writeFromBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
     return [[internal_ delegate] writeFileAtPath:path
-                                          handle:handle
+                                    fileDelegate:fileDelegate
                                           buffer:buffer
                                             size:size
                                           offset:offset
@@ -680,12 +680,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (BOOL)truncateFileAtPath:(NSString *)path
-                    handle:(id)handle
+              fileDelegate:(id)fileDelegate
                     offset:(off_t)offset 
                      error:(NSError **)error {
-  if (handle != nil &&
-      [handle respondsToSelector:@selector(truncateToOffset:error:)]) {
-    return [handle truncateToOffset:offset error:error];
+  if (fileDelegate != nil &&
+      [fileDelegate respondsToSelector:@selector(truncateToOffset:error:)]) {
+    return [fileDelegate truncateToOffset:offset error:error];
   } else if ([[internal_ delegate] respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
     return [[internal_ delegate] truncateFileAtPath:path 
                                              offset:offset 
@@ -986,7 +986,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
                   attributes:attribs
-                   outHandle:&object
+                fileDelegate:&object
                        error:&error]) {
       ret = 0;
       if (object != nil) {
@@ -1012,7 +1012,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs openFileAtPath:[NSString stringWithUTF8String:path]
                       mode:fi->flags
-                 outHandle:&object
+              fileDelegate:&object
                      error:&error]) {
       ret = 0;
       if (object != nil) {
@@ -1033,7 +1033,7 @@ static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   @try {
     id object = (id)(int)fi->fh;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] handle:object];
+    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] fileDelegate:object];
     if (object) {
       [object release]; 
     }
@@ -1052,7 +1052,7 @@ static int fusefm_ftruncate(const char* path, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
-                        handle:(fi ? (id)(int)fi->fh : nil)
+                  fileDelegate:(fi ? (id)(int)fi->fh : nil)
                         offset:offset
                          error:&error]) {
       ret = 0;
@@ -1155,7 +1155,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
-                       handle:(id)(int)fi->fh
+                 fileDelegate:(id)(int)fi->fh
                        buffer:buf
                          size:size
                        offset:offset
@@ -1176,7 +1176,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
-                      handle:(id)(int)fi->fh
+                fileDelegate:(id)(int)fi->fh
                       buffer:buf
                         size:size
                       offset:offset
