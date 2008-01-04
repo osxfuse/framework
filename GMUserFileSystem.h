@@ -98,22 +98,30 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark -
 
-#pragma mark FileSystemHandle Delegate Protocols
+#pragma mark FileSystemHandle Delegate Protocol
 
 // For GMUserFileSystemOperations that return a Handle, the handle may implement
-// all or part of the GMUserFileSystemhandleOperations protocol.
+// all or part of the GMUserFileSystemHandleOperations protocol. For any method
+// that is implemented, the corresponding method will not be called on the
+// GMUserFileSystem's delegate.
 
 @interface NSObject (GMUserFileSystemHandleOperations)
 
+// bsd-equivalent: read
 - (int)readToBuffer:(char *)buffer 
                size:(size_t)size 
              offset:(off_t)offset 
               error:(NSError **)error;
 
+// bsd-equivalent: write
 - (int)writeFromBuffer:(const char *)buffer 
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error;
+
+// bsd-equivalent: ftruncate
+- (BOOL)truncateToOffset:(off_t)offset 
+                   error:(NSError **)error;
 
 @end
 

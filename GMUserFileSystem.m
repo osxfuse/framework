@@ -551,7 +551,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                    error:(NSError **)error {
   if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:outHandle:error:)]) {
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
-                             outHandle:outHandle error:error];
+                                        outHandle:outHandle error:error];
   }  
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -581,8 +581,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                            error:(NSError **)error {
   if ([[internal_ delegate] respondsToSelector:@selector(createSymbolicLinkAtPath:withDestinationPath:error:)]) {
     return [[internal_ delegate] createSymbolicLinkAtPath:path
-                           withDestinationPath:otherPath
-                                         error:error];
+                                      withDestinationPath:otherPath
+                                                    error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
@@ -623,9 +623,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
   } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:outHandle:error:)]) {
     return [[internal_ delegate] openFileAtPath:path 
-                                mode:mode 
-                           outHandle:outHandle 
-                               error:error];
+                                           mode:mode 
+                                      outHandle:outHandle 
+                                          error:error];
   }
   *error = [GMUserFileSystem errorWithCode:ENOENT];
   return NO;
@@ -643,16 +643,16 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  size:(size_t)size 
                offset:(off_t)offset
                 error:(NSError **)error {
-  if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:handle:buffer:size:offset:error:)]) {
-    return [[internal_ delegate] readFileAtPath:path 
-                              handle:handle 
-                              buffer:buffer 
-                                size:size 
-                              offset:offset 
-                               error:error];
-  } else if (handle != nil &&
-             [handle respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
+  if (handle != nil &&
+      [handle respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
     return [handle readToBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:handle:buffer:size:offset:error:)]) {
+    return [[internal_ delegate] readFileAtPath:path
+                                         handle:handle
+                                         buffer:buffer
+                                           size:size
+                                         offset:offset
+                                          error:error];
   }
   *error = [GMUserFileSystem errorWithCode:EACCES];
   return -1;
@@ -664,31 +664,33 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error {
-  if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:handle:buffer:size:offset:error:)]) {
-    return [[internal_ delegate] writeFileAtPath:path 
-                               handle:handle 
-                               buffer:buffer 
-                                 size:size 
-                               offset:offset 
-                                error:error];
-  } else if (handle != nil &&
-             [handle respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
+  if (handle != nil &&
+      [handle respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
     return [handle writeFromBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:handle:buffer:size:offset:error:)]) {
+    return [[internal_ delegate] writeFileAtPath:path
+                                          handle:handle
+                                          buffer:buffer
+                                            size:size
+                                          offset:offset
+                                           error:error];
   }
-
   *error = [GMUserFileSystem errorWithCode:EACCES];
   return -1; 
 }
 
-- (BOOL)truncateFileAtPath:(NSString *)path 
+- (BOOL)truncateFileAtPath:(NSString *)path
+                    handle:(id)handle
                     offset:(off_t)offset 
                      error:(NSError **)error {
-  if ([[internal_ delegate] respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
+  if (handle != nil &&
+      [handle respondsToSelector:@selector(truncateToOffset:error:)]) {
+    return [handle truncateToOffset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
     return [[internal_ delegate] truncateFileAtPath:path 
-                                  offset:offset 
-                                   error:error];
+                                             offset:offset 
+                                              error:error];
   }
-
   *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
 }
@@ -880,10 +882,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                        error:(NSError **)error {
   if ([[internal_ delegate] respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
     return [[internal_ delegate] setExtendedAttribute:name 
-                              ofItemAtPath:path 
-                                     value:value
-                                     flags:flags
-                                     error:error];
+                                         ofItemAtPath:path 
+                                                value:value
+                                                flags:flags
+                                                error:error];
   }  
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return NO;
@@ -1041,7 +1043,8 @@ static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   return 0;
 }
 
-static int fusefm_truncate(const char* path, off_t offset) {
+static int fusefm_ftruncate(const char* path, off_t offset, 
+                            struct fuse_file_info *fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOTSUP;
   
@@ -1049,6 +1052,7 @@ static int fusefm_truncate(const char* path, off_t offset) {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
+                        handle:(fi ? (id)(int)fi->fh : nil)
                         offset:offset
                          error:&error]) {
       ret = 0;
@@ -1062,8 +1066,8 @@ static int fusefm_truncate(const char* path, off_t offset) {
   return ret;
 }
 
-static int fusefm_ftruncate(const char* path, off_t offset, struct fuse_file_info *fh) {
-  return fusefm_truncate(path, offset);
+static int fusefm_truncate(const char* path, off_t offset) {
+  return fusefm_ftruncate(path, offset, nil);
 }
 
 static int fusefm_chown(const char* path, uid_t uid, gid_t gid) {
