@@ -73,6 +73,53 @@ typedef enum {
   GMUserFileSystem_FAILURE,       // Failed state; probably a mount failure.
 } GMUserFileSystemStatus;
 
+@interface GMUserFileSystemInternal : NSObject {
+  NSString* mountPath_;
+  GMUserFileSystemStatus status_;
+  BOOL shouldListDoubleFiles_;  // Should directory listings contain ._ files?
+  BOOL isThreadSafe_;  // Is the delegate thread-safe?
+  id delegate_;
+}
+- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
+@end
+@implementation GMUserFileSystemInternal
+
+extern long fuse_os_version_major(void);
+- (id)init {
+  return [self initWithDelegate:nil isThreadSafe:NO];
+}
+
+- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
+  if ((self = [super init])) {
+    status_ = GMUserFileSystem_NOT_MOUNTED;
+    isThreadSafe_ = isThreadSafe;
+    delegate_ = delegate;
+
+    // Version 10.4 requires ._ to appear in directory listings.
+    long version = fuse_os_version_major();
+    shouldListDoubleFiles_ = (version < 9);
+  }
+  return self;
+}
+- (void)dealloc {
+  [mountPath_ release];
+  [super dealloc];
+}
+
+- (NSString *)mountPath { return mountPath_; }
+- (void)setMountPath:(NSString *)mountPath {
+  [mountPath_ autorelease];
+  mountPath_ = [mountPath copy];
+}
+- (GMUserFileSystemStatus)status { return status_; }
+- (void)setStatus:(GMUserFileSystemStatus)status { status_ = status; }
+- (BOOL)isThreadSafe { return isThreadSafe_; }
+- (BOOL)shouldListDoubleFiles { return shouldListDoubleFiles_; }
+- (id)delegate { return delegate_; }
+- (void)setDelegate:(id)delegate { delegate_ = delegate; }
+
+@end
+
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
 
 // The filesystem for the current thread. Valid only during a fuse callback.
@@ -113,39 +160,22 @@ typedef enum {
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
   if ((self = [super init])) {
-    status_ = GMUserFileSystem_NOT_MOUNTED;
-    isThreadSafe_ = isThreadSafe;
-    delegate_ = delegate;
-    
-    // Version 10.4 requires ._ to appear in directory listings.
-    // TODO: Switch to fuse_os_version_major() at some point.
-    shouldListDoubleFiles_ = YES;
-    struct utsname u;
-    size_t len = sizeof(u.release);
-    if (sysctlbyname("kern.osrelease", u.release, &len, NULL, 0) == 0) {
-      char* c = strchr(u.release, '.');
-      if (c) {
-        *c = '\0';
-        long version = strtol(u.release, NULL, 10);
-        if (errno != EINVAL && errno != ERANGE && version >= 9) {
-          shouldListDoubleFiles_ = NO;  // We are Leopard or above.
-        }
-      }
-    }
+    internal_ = [[GMUserFileSystemInternal alloc] initWithDelegate:delegate
+                                                      isThreadSafe:isThreadSafe];
   }
   return self;
 }
 
 - (void)dealloc {
-  [mountPath_ release];
+  [internal_ release];
   [super dealloc];
 }
 
 - (void)setDelegate:(id)delegate {
-  delegate_ = delegate;
+  [internal_ setDelegate:delegate];
 }
 - (id)delegate {
-  return delegate_;
+  return [internal_ delegate];
 }
 
 - (void)mountAtPath:(NSString *)mountPath 
@@ -160,9 +190,9 @@ typedef enum {
         withOptions:(NSArray *)options
    shouldForeground:(BOOL)shouldForeground
     detachNewThread:(BOOL)detachNewThread {
+  [internal_ setMountPath:mountPath];
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
-   mountPath, @"mountPath",
    options, @"options",
    [NSNumber numberWithBool:shouldForeground], @"shouldForeground", 
    nil, nil];
@@ -176,8 +206,8 @@ typedef enum {
 }
 
 - (void)unmount {
-  if (status_ == GMUserFileSystem_MOUNTED) {
-    NSArray* args = [NSArray arrayWithObjects:@"-v", mountPath_, nil];
+  if ([internal_ status] == GMUserFileSystem_MOUNTED) {
+    NSArray* args = [NSArray arrayWithObjects:@"-v", [internal_ mountPath], nil];
     NSTask* unmountTask = [NSTask launchedTaskWithLaunchPath:@"/sbin/umount" 
                                                    arguments:args];
     [unmountTask waitUntilExit];
@@ -207,12 +237,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                     FUSEDEVIOCGETHANDSHAKECOMPLETE, 
                     &handShakeComplete);
     if (ret == 0 && handShakeComplete) {
-      status_ = GMUserFileSystem_MOUNTED;
+      [internal_ setStatus:GMUserFileSystem_MOUNTED];
       
       // Successfully mounted, so post notification.
       NSDictionary* userInfo = 
         [NSDictionary dictionaryWithObjectsAndKeys:
-         mountPath_, @"mountPath",
+         [internal_ mountPath], @"mountPath",
          nil, nil];
       NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
       [center postNotificationName:kGMUserFileSystemDidMount object:self
@@ -229,7 +259,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)fuseInit {
-  status_ = GMUserFileSystem_INITIALIZING;
+  [internal_ setStatus:GMUserFileSystem_INITIALIZING];
   
   // The mount point won't actually show up until this winds its way
   // back through the kernel after this routine returns. In order to post
@@ -241,14 +271,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)fuseDestroy {
-  if ([delegate_ respondsToSelector:@selector(willUnmount)]) {
-    [delegate_ willUnmount];
+  if ([[internal_ delegate] respondsToSelector:@selector(willUnmount)]) {
+    [[internal_ delegate] willUnmount];
   }
-  status_ = GMUserFileSystem_UNMOUNTING;
+  [internal_ setStatus:GMUserFileSystem_UNMOUNTING];
 
   NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
-     mountPath_, @"mountPath",
+     [internal_ mountPath], @"mountPath",
      nil, nil];
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemDidUnmount object:self
@@ -265,10 +295,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     flags |= kIsInvisible;
   }
 
-  if ([delegate_ respondsToSelector:@selector(finderFlagsAtPath:)]) {
-    flags |= [delegate_ finderFlagsAtPath:path];
-  } else if ([delegate_ respondsToSelector:@selector(iconDataAtPath:)] &&
-             [delegate_ iconDataAtPath:path] != nil) {
+  if ([[internal_ delegate] respondsToSelector:@selector(finderFlagsAtPath:)]) {
+    flags |= [[internal_ delegate] finderFlagsAtPath:path];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(iconDataAtPath:)] &&
+             [[internal_ delegate] iconDataAtPath:path] != nil) {
     flags |= kHasCustomIcon;
   }
   return flags;
@@ -306,12 +336,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (NSData *)resourceForkContentsAtPath:(NSString *)path {
   NSURL* url = nil;
   if ([path hasSuffix:@".webloc"] &&
-       [delegate_ respondsToSelector:@selector(URLContentOfWeblocAtPath:)]) {
-    url = [delegate_ URLContentOfWeblocAtPath:path];
+       [[internal_ delegate] respondsToSelector:@selector(URLContentOfWeblocAtPath:)]) {
+    url = [[internal_ delegate] URLContentOfWeblocAtPath:path];
   }
   NSData* imageData = nil;
-  if ([delegate_ respondsToSelector:@selector(iconDataAtPath:)]) {
-    imageData = [delegate_ iconDataAtPath:path];
+  if ([[internal_ delegate] respondsToSelector:@selector(iconDataAtPath:)]) {
+    imageData = [[internal_ delegate] iconDataAtPath:path];
   }
   if (imageData || url) {
     GMResourceFork* fork = [GMResourceFork resourceFork];
@@ -483,8 +513,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)moveItemAtPath:(NSString *)source 
                 toPath:(NSString *)destination
                  error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(moveItemAtPath:toPath:error:)]) {
-    return [delegate_ moveItemAtPath:source toPath:destination error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(moveItemAtPath:toPath:error:)]) {
+    return [[internal_ delegate] moveItemAtPath:source toPath:destination error:error];
   }  
   
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -494,8 +524,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Removing an Item
 
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(removeItemAtPath:error:)]) {
-    return [delegate_ removeItemAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(removeItemAtPath:error:)]) {
+    return [[internal_ delegate] removeItemAtPath:path error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -507,8 +537,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)createDirectoryAtPath:(NSString *)path 
                    attributes:(NSDictionary *)attributes
                         error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(createDirectoryAtPath:attributes:error:)]) {
-    return [delegate_ createDirectoryAtPath:path attributes:attributes error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(createDirectoryAtPath:attributes:error:)]) {
+    return [[internal_ delegate] createDirectoryAtPath:path attributes:attributes error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -519,8 +549,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
               attributes:(NSDictionary *)attributes
                outHandle:(id *)outHandle
                    error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(createFileAtPath:attributes:outHandle:error:)]) {
-    return [delegate_ createFileAtPath:path attributes:attributes 
+  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:outHandle:error:)]) {
+    return [[internal_ delegate] createFileAtPath:path attributes:attributes 
                              outHandle:outHandle error:error];
   }  
 
@@ -535,8 +565,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
                  error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(linkItemAtPath:toPath:error:)]) {
-    return [delegate_ linkItemAtPath:path toPath:otherPath error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(linkItemAtPath:toPath:error:)]) {
+    return [[internal_ delegate] linkItemAtPath:path toPath:otherPath error:error];
   }  
 
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
@@ -549,8 +579,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
                            error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(createSymbolicLinkAtPath:withDestinationPath:error:)]) {
-    return [delegate_ createSymbolicLinkAtPath:path
+  if ([[internal_ delegate] respondsToSelector:@selector(createSymbolicLinkAtPath:withDestinationPath:error:)]) {
+    return [[internal_ delegate] createSymbolicLinkAtPath:path
                            withDestinationPath:otherPath
                                          error:error];
   }
@@ -561,8 +591,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
                                         error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(destinationOfSymbolicLinkAtPath:error:)]) {
-    return [delegate_ destinationOfSymbolicLinkAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(destinationOfSymbolicLinkAtPath:error:)]) {
+    return [[internal_ delegate] destinationOfSymbolicLinkAtPath:path error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:ENOENT];
@@ -586,13 +616,13 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return (*outHandle != nil);
   }
   
-  if ([delegate_ respondsToSelector:@selector(contentsAtPath:)]) {
-    *outHandle = [delegate_ contentsAtPath:path];
+  if ([[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
+    *outHandle = [[internal_ delegate] contentsAtPath:path];
     if (*outHandle != nil) {
       return YES;
     }
-  } else if ([delegate_ respondsToSelector:@selector(openFileAtPath:mode:outHandle:error:)]) {
-    return [delegate_ openFileAtPath:path 
+  } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:outHandle:error:)]) {
+    return [[internal_ delegate] openFileAtPath:path 
                                 mode:mode 
                            outHandle:outHandle 
                                error:error];
@@ -602,8 +632,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)releaseFileAtPath:(NSString *)path handle:(id)handle {
-  if ([delegate_ respondsToSelector:@selector(releaseFileAtPath:handle:)]) {
-    [delegate_ releaseFileAtPath:path handle:handle];
+  if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:handle:)]) {
+    [[internal_ delegate] releaseFileAtPath:path handle:handle];
   }
 }
 
@@ -613,8 +643,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  size:(size_t)size 
                offset:(off_t)offset
                 error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(readFileAtPath:handle:buffer:size:offset:error:)]) {
-    return [delegate_ readFileAtPath:path 
+  if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:handle:buffer:size:offset:error:)]) {
+    return [[internal_ delegate] readFileAtPath:path 
                               handle:handle 
                               buffer:buffer 
                                 size:size 
@@ -634,8 +664,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(writeFileAtPath:handle:buffer:size:offset:error:)]) {
-    return [delegate_ writeFileAtPath:path 
+  if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:handle:buffer:size:offset:error:)]) {
+    return [[internal_ delegate] writeFileAtPath:path 
                                handle:handle 
                                buffer:buffer 
                                  size:size 
@@ -653,8 +683,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)truncateFileAtPath:(NSString *)path 
                     offset:(off_t)offset 
                      error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
-    return [delegate_ truncateFileAtPath:path 
+  if ([[internal_ delegate] respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
+    return [[internal_ delegate] truncateFileAtPath:path 
                                   offset:offset 
                                    error:error];
   }
@@ -667,12 +697,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
   NSArray* contents = nil;
-  if ([delegate_ respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
-    contents = [delegate_ contentsOfDirectoryAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
+    contents = [[internal_ delegate] contentsOfDirectoryAtPath:path error:error];
   } else if ([path isEqualToString:@"/"]) {
     contents = [NSArray array];  // Give them an empty root directory for free.
   }
-  if (contents != nil && shouldListDoubleFiles_) {
+  if (contents != nil && [internal_ shouldListDoubleFiles]) {
     // Note: Tiger (10.4) requires that the ._ file are explicitly listed in 
     // the directory contents.
     NSMutableArray *fullContents = [NSMutableArray arrayWithArray:contents];
@@ -717,10 +747,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
   // The delegate can override any of the above defaults by implementing the
   // attributesOfItemAtPath: selector and returning a custom dictionary.
-  if ([delegate_ respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
+  if ([[internal_ delegate] respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
     *error = nil;
     NSDictionary* customAttribs = 
-      [delegate_ attributesOfItemAtPath:path error:error];
+      [[internal_ delegate] attributesOfItemAtPath:path error:error];
     if (!customAttribs) {
       if (!(*error)) {
         *error = [GMUserFileSystem errorWithCode:ENOENT];
@@ -757,8 +787,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // If they don't supply a size and it is a file then we try to compute it.
   if (![attributes objectForKey:NSFileSize] &&
       ![[attributes objectForKey:NSFileType] isEqualToString:NSFileTypeDirectory] &&
-      [delegate_ respondsToSelector:@selector(contentsAtPath:)]) {
-    NSData* data = [delegate_ contentsAtPath:path];
+      [[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
+    NSData* data = [[internal_ delegate] contentsAtPath:path];
     if (data == nil) {
       *error = [GMUserFileSystem errorWithCode:ENOENT];
       return nil;
@@ -782,10 +812,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   
   // The delegate can override any of the above defaults by implementing the
   // attributesOfFileSystemForPath selector and returning a custom dictionary.
-  if ([delegate_ respondsToSelector:@selector(attributesOfFileSystemForPath:error:)]) {
+  if ([[internal_ delegate] respondsToSelector:@selector(attributesOfFileSystemForPath:error:)]) {
     *error = nil;
     NSDictionary* customAttribs = 
-      [delegate_ attributesOfFileSystemForPath:path error:error];    
+      [[internal_ delegate] attributesOfFileSystemForPath:path error:error];    
     if (!customAttribs) {
       if (!(*error)) {
         *error = [GMUserFileSystem errorWithCode:ENODEV];
@@ -800,8 +830,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
-    return [delegate_ setAttributes:attributes ofItemAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
+    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];
   }  
   *error = [GMUserFileSystem errorWithCode:ENODEV];
   return NO;
@@ -810,8 +840,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Extended Attributes
 
 - (NSArray *)extendedAttributesOfItemAtPath:path error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(extendedAttributesOfItemAtPath:error:)]) {
-    return [delegate_ extendedAttributesOfItemAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(extendedAttributesOfItemAtPath:error:)]) {
+    return [[internal_ delegate] extendedAttributesOfItemAtPath:path error:error];
   }
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return nil;
@@ -821,8 +851,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                         ofItemAtPath:(NSString *)path
                                error:(NSError **)error {
   NSData* data = nil;
-  if ([delegate_ respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
-    data = [delegate_ valueOfExtendedAttribute:name ofItemAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
+    data = [[internal_ delegate] valueOfExtendedAttribute:name ofItemAtPath:path error:error];
   }
   if (data == nil) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
@@ -848,8 +878,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                        value:(NSData *)value
                        flags:(int) flags
                        error:(NSError **)error {
-  if ([delegate_ respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
-    return [delegate_ setExtendedAttribute:name 
+  if ([[internal_ delegate] respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+    return [[internal_ delegate] setExtendedAttribute:name 
                               ofItemAtPath:path 
                                      value:value
                                      flags:flags
@@ -1400,17 +1430,15 @@ static struct fuse_operations fusefm_oper = {
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  assert(status_ == GMUserFileSystem_NOT_MOUNTED);
+  assert([internal_ status] == GMUserFileSystem_NOT_MOUNTED);
 
-  [mountPath_ autorelease];
-  mountPath_ = [[args objectForKey:@"mountPath"] retain];
   NSArray* options = [args objectForKey:@"options"];
-  BOOL isThreadSafe = [[args objectForKey:@"isThreadSafe"] boolValue];
+  BOOL isThreadSafe = [internal_ isThreadSafe];
   BOOL shouldForeground = [[args objectForKey:@"shouldForeground"] boolValue];
 
   // Create mount path if necessary.
   NSFileManager* fileManager = [NSFileManager defaultManager];
-  [fileManager createDirectoryAtPath:mountPath_ attributes:nil];
+  [fileManager createDirectoryAtPath:[internal_ mountPath] attributes:nil];
 
   // Trigger initialization of NSFileManager. This is rather lame, but if we
   // don't call directoryContents before we mount our FUSE filesystem and 
@@ -1434,7 +1462,7 @@ static struct fuse_operations fusefm_oper = {
       [arguments addObject:[NSString stringWithFormat:@"-o%@",option]];
     }
   }
-  [arguments addObject:mountPath_];
+  [arguments addObject:[internal_ mountPath]];
   [args release];  // We don't need packaged up args any more.
   
   // Start Fuse Main
@@ -1444,19 +1472,19 @@ static struct fuse_operations fusefm_oper = {
     NSString* argument = [arguments objectAtIndex:i];
     argv[i] = strdup([argument UTF8String]);  // We'll just leak this for now.
   }
-  if ([delegate_ respondsToSelector:@selector(willMount)]) {
-    [delegate_ willMount];
+  if ([[internal_ delegate] respondsToSelector:@selector(willMount)]) {
+    [[internal_ delegate] willMount];
   }
-  status_ = GMUserFileSystem_MOUNTING;
+  [internal_ setStatus:GMUserFileSystem_MOUNTING];
   [pool release];
   int ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
 
   pool = [[NSAutoreleasePool alloc] init];
 
-  if (ret != 0 || status_ == GMUserFileSystem_MOUNTING) {
+  if (ret != 0 || [internal_ status] == GMUserFileSystem_MOUNTING) {
     // If we returned successfully from fuse_main while we still think we are 
     // mounting then an error must have occured during mount.
-    status_ = GMUserFileSystem_FAILURE;
+    [internal_ setStatus:GMUserFileSystem_FAILURE];
 
     NSError* error = [NSError errorWithDomain:@"GMUserFileSystemErrorDomain"
                                          code:(ret == 0) ? -1 : ret
@@ -1464,14 +1492,14 @@ static struct fuse_operations fusefm_oper = {
     
     NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
-     mountPath_, @"mountPath",
+     [internal_ mountPath], @"mountPath",
      error, @"error",
      nil, nil];
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center postNotificationName:kGMUserFileSystemMountFailed object:self
                         userInfo:userInfo];
   } else {
-    status_ = GMUserFileSystem_NOT_MOUNTED;
+    [internal_ setStatus:GMUserFileSystem_NOT_MOUNTED];
   }
 
   [pool release];
