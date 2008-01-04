@@ -274,6 +274,7 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "MACFUSE_CORE_VERSION=$(MACFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
+					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
 					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
@@ -306,6 +307,7 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "MACFUSE_CORE_VERSION=$(MACFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
+					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
 					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
