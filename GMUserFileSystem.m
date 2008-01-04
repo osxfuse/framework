@@ -75,7 +75,13 @@ typedef enum {
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
 
+// The filesystem for the current thread. Valid only during a fuse callback.
 + (GMUserFileSystem *)currentFS;
+
+// Convenience method to creates an autoreleased NSError in the 
+// NSPOSIXErrorDomain. Filesystem errors returned by the delegate must be
+// standard posix errno values.
++ (NSError *)errorWithCode:(int)code;
 
 - (void)mount:(NSDictionary *)args;
 - (void)waitUntilMounted;

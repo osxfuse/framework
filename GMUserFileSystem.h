@@ -74,11 +74,6 @@
 // Unmount the filesystem.
 - (void)unmount;
 
-// Convenience method to creates an autoreleased NSError in the 
-// NSPOSIXErrorDomain. Filesystem errors returned by the delegate must be
-// standard posix errno values.
-+ (NSError *)errorWithCode:(int)code;
-
 @end
 
 #pragma mark Notifications
