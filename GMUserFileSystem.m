@@ -747,7 +747,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // If they don't supply a size and it is a file then we try to compute it.
   if (![attributes objectForKey:NSFileSize] &&
       ![[attributes objectForKey:NSFileType] isEqualToString:NSFileTypeDirectory] &&
-      [delegate_ respondsToSelector:@selector(contentsForPath:)]) {
+      [delegate_ respondsToSelector:@selector(contentsAtPath:)]) {
     NSData* data = [delegate_ contentsAtPath:path];
     if (data == nil) {
       *error = [GMUserFileSystem errorWithCode:ENOENT];
