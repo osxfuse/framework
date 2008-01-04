@@ -41,13 +41,6 @@
 @interface GMUserFileSystem : NSObject {
   @private
   GMUserFileSystemInternal* internal_;
-#if 0
-  NSString* mountPath_;
-  int status_;  // Internal GMUserFileSystemStatus enum value.
-  BOOL isThreadSafe_;  // Is the delegate thread-safe?
-  BOOL shouldListDoubleFiles_;  // Should directory listings contain ._ files?
-  id delegate_;
-#endif
 }
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
