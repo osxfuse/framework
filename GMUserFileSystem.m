@@ -191,9 +191,13 @@ extern long fuse_os_version_major(void);
    shouldForeground:(BOOL)shouldForeground
     detachNewThread:(BOOL)detachNewThread {
   [internal_ setMountPath:mountPath];
+  NSMutableArray* optionsCopy = [NSMutableArray array];
+  for (int i = 0; i < [options count]; ++i) {
+    [optionsCopy addObject:[[[options objectAtIndex:i] copy] autorelease]];
+  }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
-   options, @"options",
+   optionsCopy, @"options",
    [NSNumber numberWithBool:shouldForeground], @"shouldForeground", 
    nil, nil];
   if (detachNewThread) {
