@@ -55,9 +55,10 @@
 #import "GMAppleDouble.h"
 #import "GMFinderInfo.h"
 #import "GMResourceFork.h"
-#import "NSData+BufferOffset.h"
+#import "GMDataBackedFileDelegate.h"
 
 #define EXPORT __attribute__((visibility("default")))
+#define ENABLE_XATTR_RESOURCES 1  // Turn off to test double files on 10.5
 
 // Notifications
 EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
@@ -556,7 +557,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
                                      fileDelegate:fileDelegate error:error];
-  }  
+  }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
   return NO;
@@ -611,18 +612,24 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  error:(NSError **)error {
   // First see if it is an Icon\r or AppleDouble file that we handle.
   if ([self isDirectoryIconAtPath:path dirPath:nil]) {
-    *fileDelegate = [NSData data];
+    NSData* data = [NSData data];  // The Icon\r file is empty.
+    *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
     return YES;
   }
   NSString* realPath;
   if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
-    *fileDelegate = [self appleDoubleContentsAtPath:realPath];
-    return (*fileDelegate != nil);
+    NSData* data = [self appleDoubleContentsAtPath:realPath];
+    if (data != nil) {
+      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+      return YES;
+    }
+    return NO;
   }
   
   if ([[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
-    *fileDelegate = [[internal_ delegate] contentsAtPath:path];
-    if (*fileDelegate != nil) {
+    NSData* data = [[internal_ delegate] contentsAtPath:path];
+    if (data != nil) {
+      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
       return YES;
     }
   } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
@@ -636,6 +643,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate {
+  if (fileDelegate != nil && 
+      [fileDelegate isKindOfClass:[GMDataBackedFileDelegate class]]) {
+    return;  // Don't report releaseFileAtPath for internal file delegate.
+  }
   if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
     [[internal_ delegate] releaseFileAtPath:path fileDelegate:fileDelegate];
   }
@@ -860,7 +871,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([[internal_ delegate] respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
     data = [[internal_ delegate] valueOfExtendedAttribute:name ofItemAtPath:path error:error];
   }
-  if (data == nil) {
+  if (data == nil && ENABLE_XATTR_RESOURCES) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
       int flags = [self finderFlagsAtPath:path];
       data = [GMFinderInfo finderInfoWithFinderFlags:flags];
