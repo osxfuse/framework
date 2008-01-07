@@ -1469,7 +1469,7 @@ static struct fuse_operations fusefm_oper = {
 
   NSMutableArray* arguments = 
     [NSMutableArray arrayWithObject:[[NSBundle mainBundle] executablePath]];
-  if (isThreadSafe) {
+  if (!isThreadSafe) {
     [arguments addObject:@"-s"];  // Force single-threaded mode.
   }
   if (shouldForeground) {
@@ -1483,7 +1483,7 @@ static struct fuse_operations fusefm_oper = {
   }
   [arguments addObject:[internal_ mountPath]];
   [args release];  // We don't need packaged up args any more.
-  
+
   // Start Fuse Main
   int argc = [arguments count];
   const char* argv[argc];
