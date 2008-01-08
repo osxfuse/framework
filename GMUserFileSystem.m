@@ -58,7 +58,6 @@
 #import "GMDataBackedFileDelegate.h"
 
 #define EXPORT __attribute__((visibility("default")))
-#define ENABLE_XATTR_RESOURCES 1  // Turn off to test double files on 10.5
 
 // Notifications
 EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
@@ -77,11 +76,13 @@ typedef enum {
 @interface GMUserFileSystemInternal : NSObject {
   NSString* mountPath_;
   GMUserFileSystemStatus status_;
-  BOOL shouldListDoubleFiles_;  // Should directory listings contain ._ files?
+  BOOL isTiger_;                  // Are we running on Tiger?
+  BOOL shouldCheckForResource_;   // Try to handle FinderInfo/Resource Forks?
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
   id delegate_;
 }
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
+- (void)setDelegate:(id)delegate;
 @end
 @implementation GMUserFileSystemInternal
 
@@ -94,11 +95,11 @@ extern long fuse_os_version_major(void);
   if ((self = [super init])) {
     status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
-    delegate_ = delegate;
+    [self setDelegate:delegate];
 
     // Version 10.4 requires ._ to appear in directory listings.
     long version = fuse_os_version_major();
-    shouldListDoubleFiles_ = (version < 9);
+    isTiger_ = (version < 9);
   }
   return self;
 }
@@ -115,9 +116,16 @@ extern long fuse_os_version_major(void);
 - (GMUserFileSystemStatus)status { return status_; }
 - (void)setStatus:(GMUserFileSystemStatus)status { status_ = status; }
 - (BOOL)isThreadSafe { return isThreadSafe_; }
-- (BOOL)shouldListDoubleFiles { return shouldListDoubleFiles_; }
+- (BOOL)isTiger { return isTiger_; }
+- (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (id)delegate { return delegate_; }
-- (void)setDelegate:(id)delegate { delegate_ = delegate; }
+- (void)setDelegate:(id)delegate { 
+  delegate_ = delegate;
+  shouldCheckForResource_ =
+    [delegate_ respondsToSelector:@selector(finderFlagsAtPath:)] ||
+    [delegate_ respondsToSelector:@selector(iconDataAtPath:)]    ||
+    [delegate_ respondsToSelector:@selector(URLContentOfWeblocAtPath:)];
+}
 
 @end
 
@@ -610,35 +618,47 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                   mode:(int)mode
           fileDelegate:(id *)fileDelegate 
                  error:(NSError **)error {
-  // First see if it is an Icon\r or AppleDouble file that we handle.
-  if ([self isDirectoryIconAtPath:path dirPath:nil]) {
-    NSData* data = [NSData data];  // The Icon\r file is empty.
-    *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
-    return YES;
-  }
-  NSString* realPath;
-  if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
-    NSData* data = [self appleDoubleContentsAtPath:realPath];
+  id delegate = [internal_ delegate];
+  if ([delegate respondsToSelector:@selector(contentsAtPath:)]) {
+    NSData* data = [delegate contentsAtPath:path];
     if (data != nil) {
       *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
       return YES;
     }
-    return NO;
+  } else if ([delegate respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
+    if ([delegate openFileAtPath:path 
+                            mode:mode 
+                    fileDelegate:fileDelegate 
+                           error:error]) {
+      return YES;  // They handled it.
+    }
+  }
+
+  // Still unable to open the file; maybe it is an Icon\r or AppleDouble?
+  if ([internal_ shouldCheckForResource]) {
+    // Is it an Icon\r file that we handle?  TODO: Should we make sure that the dir has a custom icon?
+    if ([self isDirectoryIconAtPath:path dirPath:nil]) {
+      NSData* data = [NSData data];  // The Icon\r file is empty.
+      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+      return YES;
+    }
+
+    // (Tiger Only): Maybe it is an AppleDouble file that we handle?
+    if ( [internal_ isTiger] ) {
+      NSString* realPath;
+      if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
+        NSData* data = [self appleDoubleContentsAtPath:realPath];
+        if (data != nil) {
+          *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+          return YES;
+        }
+      }
+    }
   }
   
-  if ([[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
-    NSData* data = [[internal_ delegate] contentsAtPath:path];
-    if (data != nil) {
-      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
-      return YES;
-    }
-  } else if ([[internal_ delegate] respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
-    return [[internal_ delegate] openFileAtPath:path 
-                                           mode:mode 
-                                   fileDelegate:fileDelegate 
-                                          error:error];
+  if (*error == nil) {
+    *error = [GMUserFileSystem errorWithCode:ENOENT];
   }
-  *error = [GMUserFileSystem errorWithCode:ENOENT];
   return NO;
 }
 
@@ -719,22 +739,33 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else if ([path isEqualToString:@"/"]) {
     contents = [NSArray array];  // Give them an empty root directory for free.
   }
-  if (contents != nil && [internal_ shouldListDoubleFiles]) {
+  if (contents != nil && 
+      [internal_ isTiger] &&
+      [internal_ shouldCheckForResource]) {
     // Note: Tiger (10.4) requires that the ._ file are explicitly listed in 
-    // the directory contents.
-    NSMutableArray *fullContents = [NSMutableArray arrayWithArray:contents];
+    // the directory contents if you want a custom icon to show up. If they
+    // don't provide their own ._ file and they have a custom icon, then we'll
+    // add the ._ file to the directory contents.
+    NSMutableSet* fullContents = [NSMutableSet setWithArray:contents];
     for (int i = 0; i < [contents count]; ++i) {
       NSString* name = [contents objectAtIndex:i];
+      if ([name hasPrefix:@"._"]) {
+        continue;  // Skip over any AppleDouble that they provide.
+      }
+      NSString* doubleName = [NSString stringWithFormat:@"._%@", name];
+      if ([fullContents containsObject:doubleName]) {
+        continue;  // They provided their own AppleDouble for 'name'.
+      }
       NSString* pathPlusName = [path stringByAppendingPathComponent:name];
       if ([self hasCustomIconAtPath:pathPlusName]) {
-        [fullContents addObject:[NSString stringWithFormat:@"._%@",name]];
+        [fullContents addObject:doubleName];
       }
     }
     if ([self hasCustomIconAtPath:path]) {
       [fullContents addObject:@"Icon\r"];
       [fullContents addObject:@"._Icon\r"];
     }
-    contents = fullContents;
+    contents = [fullContents allObjects];
   }
   return contents;
 }
@@ -743,6 +774,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
                                    error:(NSError **)error {
+  // Set up default item attributes.
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
   [attributes setObject:[NSNumber numberWithLong:0555]
                  forKey:NSFilePosixPermissions];
@@ -754,27 +786,51 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     [attributes setObject:NSFileTypeRegular forKey:NSFileType];
   }
 
-  // If this is an AppleDouble file, then we'll update path to be the original
-  // representative of that double file; i.e. /._baz -> /baz.
-  BOOL isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
-  
-  // If the maybe-fixed-up path is a directoryIcon, we'll modify the path to
-  // refer to the parent directory and note that we are a directory icon.
-  BOOL isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
+  id delegate = [internal_ delegate];
+  BOOL isAppleDouble = NO;   // May only be set to YES on Tiger.
+  BOOL isDirectoryIcon = NO;
 
   // The delegate can override any of the above defaults by implementing the
   // attributesOfItemAtPath: selector and returning a custom dictionary.
-  if ([[internal_ delegate] respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
-    *error = nil;
-    NSDictionary* customAttribs = 
-      [[internal_ delegate] attributesOfItemAtPath:path error:error];
-    if (!customAttribs) {
-      if (!(*error)) {
-        *error = [GMUserFileSystem errorWithCode:ENOENT];
-      }
-      return nil;
+  NSDictionary* customAttribs = nil;
+  BOOL supportsAttributesSelector = 
+    [delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)];
+  if (supportsAttributesSelector) {
+    customAttribs = [delegate attributesOfItemAtPath:path error:error];
+  }
+
+  // Maybe this is the root directory?  If so, we'll claim it always exists.
+  if (!customAttribs && [path isEqualToString:@"/"]) {
+      return attributes;  // The root directory always exists.
+  }
+
+  // Maybe check to see if this is a special file that we should handle. If they
+  // wanted to handle it, then they would have given us back customAttribs.
+  if (!customAttribs && [internal_ shouldCheckForResource]) {
+    // (Tiger-Only): If this is an AppleDouble file then we update the path to
+    // be the original representative of that double file; i.e. /._baz -> /baz.
+    if ([internal_ isTiger]) {
+      isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
     }
+
+    // If the maybe-fixed-up path is a directoryIcon, we'll modify the path to
+    // refer to the parent directory and note that we are a directory icon.
+    isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
+
+    // Maybe we'll try again to get custom attribs on the real path.
+    if (supportsAttributesSelector && (isAppleDouble || isDirectoryIcon)) {
+        customAttribs = [delegate attributesOfItemAtPath:path error:error];
+    }
+  }
+
+  if (customAttribs) {
     [attributes addEntriesFromDictionary:customAttribs];
+  } else if (supportsAttributesSelector) {
+    // They explicitly support attributesOfItemAtPath: and returned nil.
+    if (!(*error)) {
+      *error = [GMUserFileSystem errorWithCode:ENOENT];
+    }
+    return nil;
   }
 
   // If this is a directory Icon\r then it is an empty file and we're done.
@@ -788,7 +844,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return nil;
   }
 
-  // If this is a ._ then we'll need to compute its size and we're done.
+  // If this is a ._ then we'll need to compute its size and we're done. This
+  // will never be true on post-Tiger.
   if (isAppleDouble) {
     NSData* data = [self appleDoubleContentsAtPath:path];
     if (data != nil) {
@@ -804,7 +861,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // If they don't supply a size and it is a file then we try to compute it.
   if (![attributes objectForKey:NSFileSize] &&
       ![[attributes objectForKey:NSFileType] isEqualToString:NSFileTypeDirectory] &&
-      [[internal_ delegate] respondsToSelector:@selector(contentsAtPath:)]) {
+      [delegate respondsToSelector:@selector(contentsAtPath:)]) {
     NSData* data = [[internal_ delegate] contentsAtPath:path];
     if (data == nil) {
       *error = [GMUserFileSystem errorWithCode:ENOENT];
@@ -867,25 +924,27 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (NSData *)valueOfExtendedAttribute:(NSString *)name 
                         ofItemAtPath:(NSString *)path
                                error:(NSError **)error {
+  id delegate = [internal_ delegate];
   NSData* data = nil;
-  if ([[internal_ delegate] respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
-    data = [[internal_ delegate] valueOfExtendedAttribute:name ofItemAtPath:path error:error];
+  BOOL xattrSupported = [delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)];
+  if (xattrSupported) {
+    data = [delegate valueOfExtendedAttribute:name ofItemAtPath:path error:error];
   }
-  if (data == nil && ENABLE_XATTR_RESOURCES) {
+
+  // On 10.5+ we might supply FinderInfo/ResourceFork as xattr for them.
+  if (!data && [internal_ shouldCheckForResource] && ![internal_ isTiger]) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
       int flags = [self finderFlagsAtPath:path];
-      data = [GMFinderInfo finderInfoWithFinderFlags:flags];
+      if (flags != 0) {
+        data = [GMFinderInfo finderInfoWithFinderFlags:flags];
+      }
     } else if ([name isEqualToString:@"com.apple.ResourceFork"]) {
       [self isDirectoryIconAtPath:path dirPath:&path];
       data = [self resourceForkContentsAtPath:path];
-      if (data == nil) {
-        *error = [GMUserFileSystem errorWithCode:ENOATTR];
-        return nil;
-      }
-    }    
+    }
   }
-  if (data == nil) {
-    *error = [GMUserFileSystem errorWithCode:ENOTSUP];
+  if (data == nil && *error == nil) {
+    *error = [GMUserFileSystem errorWithCode:xattrSupported ? ENOATTR : ENOTSUP];
   }
   return data;
 }
