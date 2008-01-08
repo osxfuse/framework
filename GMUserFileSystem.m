@@ -319,6 +319,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (BOOL)hasCustomIconAtPath:(NSString *)path {
+  if ([path isEqualToString:@"/"]) {
+    return NO;  // For a volume icon they should use the volicon= option.
+  }
   UInt16 flags = [self finderFlagsAtPath:path];
   return (flags & kHasCustomIcon) == kHasCustomIcon;
 }
