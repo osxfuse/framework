@@ -306,4 +306,9 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                        flags:(int)flags
                        error:(NSError **)error;
 
+// bsd-equivalent: removexattr
+- (BOOL)removeExtendedAttribute:(NSString *)name
+                   ofItemAtPath:(NSString *)path
+                          error:(NSError **)error;
+
 @end

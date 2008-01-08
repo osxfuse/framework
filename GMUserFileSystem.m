@@ -954,15 +954,29 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                        value:(NSData *)value
                        flags:(int) flags
                        error:(NSError **)error {
-  if ([[internal_ delegate] respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
-    return [[internal_ delegate] setExtendedAttribute:name 
-                                         ofItemAtPath:path 
-                                                value:value
-                                                flags:flags
-                                                error:error];
+  id delegate = [internal_ delegate];
+  if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+    return [delegate setExtendedAttribute:name 
+                             ofItemAtPath:path 
+                                    value:value
+                                    flags:flags
+                                    error:error];
   }  
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return NO;
+}
+
+- (BOOL)removeExtendedAttribute:(NSString *)name
+                   ofItemAtPath:(NSString *)path
+                          error:(NSError **)error {
+  id delegate = [internal_ delegate];
+  if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+    return [delegate removeExtendedAttribute:name 
+                                ofItemAtPath:path 
+                                       error:error];
+  }  
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];
+  return NO;  
 }
 
 #pragma mark FUSE Operations
@@ -1335,6 +1349,25 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
   return ret;
 }
 
+static int fusefm_removexattr(const char *path, const char *name) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOATTR;
+  @try {
+    NSError* error = nil;
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs removeExtendedAttribute:[NSString stringWithUTF8String:name]
+                    ofItemAtPath:[NSString stringWithUTF8String:path]
+                           error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
 static int fusefm_listxattr(const char *path, char *list, size_t size)
 {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -1490,6 +1523,7 @@ static struct fuse_operations fusefm_oper = {
   .create = fusefm_create,
   .getxattr	= fusefm_getxattr,
   .setxattr = fusefm_setxattr,
+  .removexattr = fusefm_removexattr,
   .listxattr	= fusefm_listxattr,
   .mkdir = fusefm_mkdir,
   .unlink = fusefm_unlink,
