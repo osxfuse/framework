@@ -308,10 +308,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     flags |= kIsInvisible;
   }
 
-  if ([[internal_ delegate] respondsToSelector:@selector(finderFlagsAtPath:)]) {
-    flags |= [[internal_ delegate] finderFlagsAtPath:path];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(iconDataAtPath:)] &&
-             [[internal_ delegate] iconDataAtPath:path] != nil) {
+  id delegate = [internal_ delegate];
+  if ([delegate respondsToSelector:@selector(finderFlagsAtPath:)]) {
+    flags |= [delegate finderFlagsAtPath:path];
+  } else if ([delegate respondsToSelector:@selector(iconDataAtPath:)] &&
+             [delegate iconDataAtPath:path] != nil) {
     flags |= kHasCustomIcon;
   }
   return flags;
