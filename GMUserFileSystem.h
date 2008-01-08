@@ -154,7 +154,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 - (NSData *)iconDataAtPath:(NSString *)path;
 
 // The url for the .webloc file at path. This is only called for .webloc files.
-- (NSURL *)URLContentOfWeblocAtPath:(NSString *)path;
+- (NSURL *)URLOfWeblocAtPath:(NSString *)path;
 
 @end
 

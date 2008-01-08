@@ -124,7 +124,7 @@ extern long fuse_os_version_major(void);
   shouldCheckForResource_ =
     [delegate_ respondsToSelector:@selector(finderFlagsAtPath:)] ||
     [delegate_ respondsToSelector:@selector(iconDataAtPath:)]    ||
-    [delegate_ respondsToSelector:@selector(URLContentOfWeblocAtPath:)];
+    [delegate_ respondsToSelector:@selector(URLOfWeblocAtPath:)];
 }
 
 @end
@@ -347,14 +347,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
     return YES;
   }
-  return NO;  
+  return NO;
 }
 
 - (NSData *)resourceForkContentsAtPath:(NSString *)path {
   NSURL* url = nil;
   if ([path hasSuffix:@".webloc"] &&
-       [[internal_ delegate] respondsToSelector:@selector(URLContentOfWeblocAtPath:)]) {
-    url = [[internal_ delegate] URLContentOfWeblocAtPath:path];
+       [[internal_ delegate] respondsToSelector:@selector(URLOfWeblocAtPath:)]) {
+    url = [[internal_ delegate] URLOfWeblocAtPath:path];
   }
   NSData* imageData = nil;
   if ([[internal_ delegate] respondsToSelector:@selector(iconDataAtPath:)]) {
