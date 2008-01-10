@@ -107,19 +107,19 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 @interface NSObject (GMUserFileSystemFileDelegate)
 
-// bsd-equivalent: read
+// BSD-equivalent: read(2)
 - (int)readToBuffer:(char *)buffer 
                size:(size_t)size 
              offset:(off_t)offset 
               error:(NSError **)error;
 
-// bsd-equivalent: write
+// BSD-equivalent: write(2)
 - (int)writeFromBuffer:(const char *)buffer 
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error;
 
-// bsd-equivalent: ftruncate
+// BSD-equivalent: ftruncate(2)
 - (BOOL)truncateToOffset:(off_t)offset 
                    error:(NSError **)error;
 
@@ -162,7 +162,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // These are the core methods that your filesystem needs to implement. Unless
 // otherwise noted, they typically should behave like the NSFileManager 
 // equivalent. However, the error codes that they return should correspond to
-// the bsd-equivalent call and be in the NSPOSIXErrorDomain.
+// the BSD-equivalent call and be in the NSPOSIXErrorDomain.
 //
 // For a read-only filesystem, you can typically pick-and-choose which methods
 // to implement.  For example, a minimal read-only filesystem might implement:
@@ -179,6 +179,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark Directory Contents
 
+// BSD-equivalent: readdir(3)
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error;
 
 #pragma mark Getting and Setting Attributes
@@ -187,15 +188,15 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // return at least the NSFileType attribute. You may omit the NSFileSize
 // attribute if contentsAtPath: is implemented, although this is less efficient.
 //
-// bsd-equivalent: stat
+// BSD-equivalent: stat(2)
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
                                    error:(NSError **)error;
 
-// bsd-equivalent: statvfs
+// BSD-equivalent: statvfs(3)
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
                                           error:(NSError **)error;
 
-// bsd-equivalent: chown, chmod, utimes
+// BSD-equivalent: chown(2), chmod(2), utimes(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error;
@@ -206,19 +207,19 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // Return nil if the file does not exist at the given path.
 - (NSData *)contentsAtPath:(NSString *)path;
 
-// bsd-equivalent: open
+// BSD-equivalent: open(2)
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
           fileDelegate:(id *)fileDelegate
                  error:(NSError **)error;
 
-// bsd-equivalent: close
+// BSD-equivalent: close(2)
 - (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
 
 // This is only called if the fileDelegate is nil or does not implement the 
 // readToBuffer:size:offset:error: method.
 //
-// bsd-equivalent: read
+// BSD-equivalent: pread(2)
 - (int)readFileAtPath:(NSString *)path 
          fileDelegate:(id)fileDelegate
                buffer:(char *)buffer 
@@ -229,7 +230,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // This is only called if the fileDelegate is nil or does not implement the 
 // writeFromBuffer:size:offset:error: method.
 //
-// bsd-equivalent: write
+// BSD-equivalent: pwrite(2)
 - (int)writeFileAtPath:(NSString *)path 
           fileDelegate:(id)fileDelegate 
                 buffer:(const char *)buffer
@@ -240,19 +241,19 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // This is only called if the fileDelegate is nil or does not implement the 
 // truncateToOffset:error: method.
 //
-// bsd-equivalent: truncate
+// BSD-equivalent: truncate(2)
 - (BOOL)truncateFileAtPath:(NSString *)path 
                     offset:(off_t)offset 
                      error:(NSError **)error;
 
 #pragma mark Creating an Item
 
-// bsd-equivalent: mkdir
+// BSD-equivalent: mkdir(2)
 - (BOOL)createDirectoryAtPath:(NSString *)path 
                    attributes:(NSDictionary *)attributes
                         error:(NSError **)error;
 
-// bsd-equivalent: creat
+// BSD-equivalent: creat(2)
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
             fileDelegate:(id *)fileDelegate
@@ -260,53 +261,53 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark Moving an Item
 
-// bsd-equivalent: rename
+// BSD-equivalent: rename(2)
 - (BOOL)moveItemAtPath:(NSString *)source 
                 toPath:(NSString *)destination
                  error:(NSError **)error;
 
 #pragma mark Removing an Item
 
-// bsd-equivalent: rmdir, unlink
+// BSD-equivalent: rmdir(2), unlink(2)
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error;
 
 #pragma mark Linking an Item
 
-// bsd-equivalent: link
+// BSD-equivalent: link(2)
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
                  error:(NSError **)error;
 
 #pragma mark Symbolic Links
 
-// bsd-equivalent: symlink
+// BSD-equivalent: symlink(2)
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
                            error:(NSError **)error;
 
-// bsd-equivalent: readlink
+// BSD-equivalent: readlink(2)
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
                                         error:(NSError **)error;
 
 #pragma mark Extended Attributes
 
-// bsd-equivalent: listxattr
+// BSD-equivalent: listxattr(2)
 - (NSArray *)extendedAttributesOfItemAtPath:path 
                                       error:(NSError **)error;
 
-// bsd-equivalent: getxattr
+// BSD-equivalent: getxattr(2)
 - (NSData *)valueOfExtendedAttribute:(NSString *)name 
                         ofItemAtPath:(NSString *)path
                                error:(NSError **)error;
 
-// bsd-equivalent: setxattr
+// BSD-equivalent: setxattr(2)
 - (BOOL)setExtendedAttribute:(NSString *)name
                 ofItemAtPath:(NSString *)path
                        value:(NSData *)value
                        flags:(int)flags
                        error:(NSError **)error;
 
-// bsd-equivalent: removexattr
+// BSD-equivalent: removexattr(2)
 - (BOOL)removeExtendedAttribute:(NSString *)name
                    ofItemAtPath:(NSString *)path
                           error:(NSError **)error;
