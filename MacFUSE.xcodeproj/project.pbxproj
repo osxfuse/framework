@@ -155,6 +155,7 @@
 				8DC2EF520486A6940098B216 /* Resources */,
 				8DC2EF540486A6940098B216 /* Sources */,
 				8DC2EF560486A6940098B216 /* Frameworks */,
+				FF8DE2320D4EFE7C0007BFF6 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -194,6 +195,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FF8DE2320D4EFE7C0007BFF6 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${TARGET_NAME}.framework\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir $BRIDGE_DIR\n$GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${TARGET_NAME}.bridgesupport\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8DC2EF540486A6940098B216 /* Sources */ = {
