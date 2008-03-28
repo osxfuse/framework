@@ -60,6 +60,8 @@
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
+EXPORT NSString* const kGMUserFileSystemMountPathKey = @"mountPath";
+EXPORT NSString* const kGMUserFileSystemErrorKey = @"error";
 EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
 EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
 EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
@@ -255,7 +257,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       // Successfully mounted, so post notification.
       NSDictionary* userInfo = 
         [NSDictionary dictionaryWithObjectsAndKeys:
-         [internal_ mountPath], @"mountPath",
+         [internal_ mountPath], kGMUserFileSystemMountPathKey,
          nil, nil];
       NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
       [center postNotificationName:kGMUserFileSystemDidMount object:self
@@ -291,7 +293,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
   NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
-     [internal_ mountPath], @"mountPath",
+     [internal_ mountPath], kGMUserFileSystemMountPathKey,
      nil, nil];
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemDidUnmount object:self
@@ -1608,8 +1610,8 @@ static struct fuse_operations fusefm_oper = {
     
     NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
-     [internal_ mountPath], @"mountPath",
-     error, @"error",
+     [internal_ mountPath], kGMUserFileSystemMountPathKey,
+     error, kGMUserFileSystemErrorKey,
      nil, nil];
     NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
     [center postNotificationName:kGMUserFileSystemMountFailed object:self

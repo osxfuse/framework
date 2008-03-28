@@ -84,10 +84,16 @@
 // should assume that notifications will not be posted on the main thread. The
 // object will always be the GMUserFileSystem* and the userInfo will always
 // contain at least the following:
-//   @"mountPath" -> NSString* that is the mount path
+//   kGMUserFileSystemMountPathkey -> NSString* that is the mount path
+
+// Key in notification dictionary for mount path (@"mountPath" for legacy)
+extern NSString* const kGMUserFileSystemMountPathKey;
+
+// Key in notification dictionary for an error (@"error" for legacy reasons)
+extern NSString* const kGMUserFileSystemErrorKey;
 
 // Notification sent when the mountAtPath operation fails. The userInfo will
-// contain an @"error" key with an NSError*.
+// contain an kGMUserFileSystemErrorKey with an NSError*.
 extern NSString* const kGMUserFileSystemMountFailed;
 
 // Notification sent after the filesystem is successfully mounted.
