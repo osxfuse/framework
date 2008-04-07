@@ -39,6 +39,14 @@
 @interface GMFinderInfo : NSObject {
 }
 
+// Create raw data for FinderInfo with the given flags. See header 
+// CoreServices/CarbonCore/Finder.h for what flags can be used.
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags;
+
+// Suitable only for files (not directories), this version allows you to
+// specify type and creator four-char-codes in addition to the flags.
++ (NSData *)finderInfoWithFinderFlags:(UInt16)flags
+                             typeCode:(OSType)typeCode
+                          creatorCode:(OSType)creatorCode;
 
 @end

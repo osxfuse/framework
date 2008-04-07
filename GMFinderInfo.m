@@ -77,11 +77,21 @@ typedef struct {
 @implementation GMFinderInfo
 
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags {
+  return [GMFinderInfo finderInfoWithFinderFlags:flags
+                                        typeCode:0
+                                     creatorCode:0];
+}
+
++ (NSData *)finderInfoWithFinderFlags:(UInt16)flags
+                             typeCode:(OSType)typeCode
+                          creatorCode:(OSType)creatorCode {
   PackedFinderInfo info;
   assert(sizeof(info) == 32);
   memset(&info, 0, sizeof(info));
+  info.base.fileOrDirInfo.fileInfo.type = htonl(typeCode);
+  info.base.fileOrDirInfo.fileInfo.creator = htonl(creatorCode);
   info.base.flags = htons(flags);
-  return [NSData dataWithBytes:&info length:sizeof(info)];
+  return [NSData dataWithBytes:&info length:sizeof(info)];  
 }
 
 @end
