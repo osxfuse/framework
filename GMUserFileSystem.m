@@ -60,11 +60,27 @@
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
+EXPORT NSString* const kGMUserFileSystemErrorDomain = @"GMUserFileSystemErrorDomain";
 EXPORT NSString* const kGMUserFileSystemMountPathKey = @"mountPath";
 EXPORT NSString* const kGMUserFileSystemErrorKey = @"error";
 EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
 EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
 EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
+
+typedef enum {
+  // Unable to unmount a dead FUSE files system located at mount point.
+  GMUserFileSystem_ERROR_UNMOUNT_DEADFS = 1000,
+  
+  // Gave up waiting for system removal of existing dir in /Volumes/x after 
+  // unmounting a dead FUSE file system.
+  GMUserFileSystem_ERROR_UNMOUNT_DEADFS_RMDIR = 1001,
+  
+  // The mount point did not exist, and we were unable to mkdir it.
+  GMUserFileSystem_ERROR_MOUNT_MKDIR = 1002,
+  
+  // fuse_main returned while trying to mount and don't know why.
+  GMUserFileSystem_ERROR_MOUNT_FUSE_MAIN_INTERNAL = 1003,
+} GMUserFileSystemErrorCode;
 
 typedef enum {
   GMUserFileSystem_NOT_MOUNTED,   // Not mounted.
@@ -269,7 +285,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   
   // Tried for a long time and no luck :-(
-  // TODO: Unmount and report failure?
+  // Unmount and report failure?
   [pool release];
 }
 
@@ -472,7 +488,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     stbuf->st_mode |= S_IFLNK;
   } else {
     *error = [GMUserFileSystem errorWithCode:EFTYPE];
-    NSLog(@"Illegal file type: '%@' at path '%@'", fileType, path);
     return NO;
   }
   
@@ -650,7 +665,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
 
     // (Tiger Only): Maybe it is an AppleDouble file that we handle?
-    if ( [internal_ isTiger] ) {
+    if ([internal_ isTiger]) {
       NSString* realPath;
       if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
         NSData* data = [self appleDoubleContentsAtPath:realPath];
@@ -1545,18 +1560,129 @@ static struct fuse_operations fusefm_oper = {
 
 #pragma mark Internal Mount
 
+- (void)postMountError:(NSError *)error {
+  assert([internal_ status] == GMUserFileSystem_MOUNTING);
+  [internal_ setStatus:GMUserFileSystem_FAILURE];
+
+  NSDictionary* userInfo = 
+    [NSDictionary dictionaryWithObjectsAndKeys:
+     [internal_ mountPath], kGMUserFileSystemMountPathKey,
+     error, kGMUserFileSystemErrorKey,
+     nil, nil];
+  NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+  [center postNotificationName:kGMUserFileSystemMountFailed object:self
+                      userInfo:userInfo];
+}  
+
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   assert([internal_ status] == GMUserFileSystem_NOT_MOUNTED);
+  [internal_ setStatus:GMUserFileSystem_MOUNTING];
 
   NSArray* options = [args objectForKey:@"options"];
   BOOL isThreadSafe = [internal_ isThreadSafe];
   BOOL shouldForeground = [[args objectForKey:@"shouldForeground"] boolValue];
 
-  // Create mount path if necessary.
-  NSFileManager* fileManager = [NSFileManager defaultManager];
-  [fileManager createDirectoryAtPath:[internal_ mountPath] attributes:nil];
+  // Maybe there is a dead fuse FS stuck on our mount point?
+  struct statfs statfs_buf;
+  memset(&statfs_buf, 0, sizeof(statfs_buf));
+  int rc = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
+  if (rc == 0) {
+    if (statfs_buf.f_reserved1 == (short)(-1)) {
+      // We use a special indicator value from MacFUSE in the f_fssubtype field
+      // to indicate that the currently mounted filesystem is dead. It probably 
+      // crashed and was never unmounted.
+      // NOTE: If we ever drop 10.4 support, then we can use statfs64 and get 
+      // the f_fssubtype field properly here. Until then, it is in f_reserved1.
+      rc = unmount([[internal_ mountPath] UTF8String], 0);
+      if (rc != 0) {
+        NSString* description = @"Unable to unmount an existing 'dead' filesystem.";
+        NSDictionary* userInfo =
+          [NSDictionary dictionaryWithObjectsAndKeys:
+           description, NSLocalizedDescriptionKey,
+           [GMUserFileSystem errorWithCode:errno], NSUnderlyingErrorKey,
+           nil, nil];
+        NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
+                                             code:GMUserFileSystem_ERROR_UNMOUNT_DEADFS
+                                         userInfo:userInfo];
+        [self postMountError:error];
+        [pool release];
+        return;
+      }
+      if ([[internal_ mountPath] hasPrefix:@"/Volumes/"]) {
+        // Directories for mounts in @"/Volumes/..." are removed automatically
+        // when an unmount occurs. This is an asynchronous process, so we need
+        // to wait until the directory is removed before proceeding. Otherwise,
+        // it may be removed after we try to create the mount directory and the
+        // mount attempt will fail.
+        BOOL isDirectoryRemoved = NO;
+        static const int kWaitForDeadFSTimeoutSeconds = 5;
+        struct stat stat_buf;
+        for (int i = 0; i < 2 * kWaitForDeadFSTimeoutSeconds; ++i) {
+          usleep(500000);  // .5 seconds
+          rc = stat([[internal_ mountPath] UTF8String], &stat_buf);
+          if (rc != 0 && errno == ENOENT) {
+            isDirectoryRemoved = YES;
+            break;
+          }
+        }
+        if (!isDirectoryRemoved) {
+          NSString* description = 
+            @"Gave up waiting for directory under /Volumes to be removed after "
+             "cleaning up a dead file system mount.";
+          NSDictionary* userInfo =
+            [NSDictionary dictionaryWithObjectsAndKeys:
+             description, NSLocalizedDescriptionKey,
+             nil, nil];
+          NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
+                                               code:GMUserFileSystem_ERROR_UNMOUNT_DEADFS_RMDIR
+                                           userInfo:userInfo];
+          [self postMountError:error];
+          [pool release];
+          return;
+        }
+      }
+    }
+  }
+
+  // Check and create mount path as necessary.
+  struct stat stat_buf;
+  memset(&stat_buf, 0, sizeof(stat_buf));
+  rc = stat([[internal_ mountPath] UTF8String], &stat_buf);
+  if (rc == 0) {
+    if (!(stat_buf.st_mode & S_IFDIR)) {
+      [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
+      [pool release];
+      return;
+    }
+  } else {
+    switch (errno) {
+      case ENOTDIR: {
+        [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
+        [pool release];
+        return;
+      }
+      case ENOENT: {
+        // The mount directory does not exists; we'll create as a courtesy.
+        rc = mkdir([[internal_ mountPath] UTF8String], 0775);
+        if (rc != 0) {
+          NSDictionary* userInfo =
+            [NSDictionary dictionaryWithObjectsAndKeys:
+             @"Unable to create directory for mount point.", NSLocalizedDescriptionKey,
+            [GMUserFileSystem errorWithCode:errno], NSUnderlyingErrorKey,
+             nil, nil];
+          NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
+                                               code:GMUserFileSystem_ERROR_MOUNT_MKDIR
+                                           userInfo:userInfo];
+          [self postMountError:error];
+          [pool release];
+          return;                  
+        }
+        break;
+      }
+    }
+  }
 
   // Trigger initialization of NSFileManager. This is rather lame, but if we
   // don't call directoryContents before we mount our FUSE filesystem and 
@@ -1564,6 +1690,7 @@ static struct fuse_operations fusefm_oper = {
   // NSFileManager class will do lazy init and will query all mounted
   // filesystems. This leads to deadlock when we re-enter our mounted fuse fs. 
   // Once initialized it seems to work fine.
+  NSFileManager* fileManager = [NSFileManager defaultManager];
   [fileManager directoryContentsAtPath:@"/Volumes"];
 
   NSMutableArray* arguments = 
@@ -1593,29 +1720,26 @@ static struct fuse_operations fusefm_oper = {
   if ([[internal_ delegate] respondsToSelector:@selector(willMount)]) {
     [[internal_ delegate] willMount];
   }
-  [internal_ setStatus:GMUserFileSystem_MOUNTING];
   [pool release];
   int ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
 
   pool = [[NSAutoreleasePool alloc] init];
 
-  if (ret != 0 || [internal_ status] == GMUserFileSystem_MOUNTING) {
-    // If we returned successfully from fuse_main while we still think we are 
-    // mounting then an error must have occured during mount.
-    [internal_ setStatus:GMUserFileSystem_FAILURE];
-
-    NSError* error = [NSError errorWithDomain:@"GMUserFileSystemErrorDomain"
-                                         code:(ret == 0) ? -1 : ret
-                                     userInfo:nil];
-    
-    NSDictionary* userInfo = 
+  if ([internal_ status] == GMUserFileSystem_MOUNTING) {
+    // If we returned from fuse_main while we still think we are 
+    // mounting then an error must have occurred during mount.
+    NSString* description = [NSString stringWithFormat:@
+      "Internal fuse error (rc=%d) while attempting to mount the file system. "
+      "For now, the best way to diagnose is to look for error messages using "
+      "Console.", ret];
+    NSDictionary* userInfo =
     [NSDictionary dictionaryWithObjectsAndKeys:
-     [internal_ mountPath], kGMUserFileSystemMountPathKey,
-     error, kGMUserFileSystemErrorKey,
+     description, NSLocalizedDescriptionKey,
      nil, nil];
-    NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-    [center postNotificationName:kGMUserFileSystemMountFailed object:self
-                        userInfo:userInfo];
+    NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
+                                         code:GMUserFileSystem_ERROR_MOUNT_FUSE_MAIN_INTERNAL
+                                     userInfo:userInfo];
+    [self postMountError:error];
   } else {
     [internal_ setStatus:GMUserFileSystem_NOT_MOUNTED];
   }

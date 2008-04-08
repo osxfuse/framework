@@ -86,6 +86,9 @@
 // contain at least the following:
 //   kGMUserFileSystemMountPathkey -> NSString* that is the mount path
 
+// Error domain for GMUserFileSystem specific errors.
+extern NSString* const kGMUserFileSystemErrorDomain;
+
 // Key in notification dictionary for mount path (@"mountPath" for legacy)
 extern NSString* const kGMUserFileSystemMountPathKey;
 
