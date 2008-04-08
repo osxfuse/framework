@@ -196,15 +196,36 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // Returns a dictionary of attributes at the given path. It is required to 
 // return at least the NSFileType attribute. You may omit the NSFileSize
 // attribute if contentsAtPath: is implemented, although this is less efficient.
+// The following keys are currently supported (unknown keys are ignored):
+//   NSFileType [Required]
+//   NSFileSize [Recommended]
+//   NSFileModificationDate
+//   NSFileReferenceCount
+//   NSFilePosixPermissions
+//   NSFileOwnerAccountID
+//   NSFileGroupOwnerAccountID
+//   NSFileCreationDate [May eventually be supported]
 //
 // BSD-equivalent: stat(2)
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
                                    error:(NSError **)error;
 
+// The following keys are currently supported (unknown keys are ignored):
+//   NSFileSystemSize
+//   NSFileSystemFreeSize
+//   NSFileSystemNodes
+//   NSFileSystemFreeNodes
+//
 // BSD-equivalent: statvfs(3)
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
                                           error:(NSError **)error;
 
+// The following keys may be present:
+//   NSFileOwnerAccountID
+//   NSFileGroupOwnerAccountID
+//   NSFileModificationDate
+//   NSFilePosixPermissions
+//   
 // BSD-equivalent: chown(2), chmod(2), utimes(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
