@@ -77,8 +77,6 @@
 
 #pragma mark Notifications
 
-// Notifications
-//
 // The GMUserFileSystem will post lifecycle notifications to the defaultCenter.
 // Since the underlying GMUserFileSystem implementation is multi-threaded, you 
 // should assume that notifications will not be posted on the main thread. The
@@ -104,6 +102,11 @@ extern NSString* const kGMUserFileSystemDidMount;
 
 // Notification sent after the filesystem is successfully unmounted.
 extern NSString* const kGMUserFileSystemDidUnmount;
+
+#pragma mark Additional Item Attribute Keys
+
+// For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
+extern NSString* const kGMUserFileSystemFileFlagsKey;
 
 #pragma mark -
 
@@ -205,6 +208,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
 //   NSFileCreationDate [May eventually be supported]
+//   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
 // BSD-equivalent: stat(2)
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 

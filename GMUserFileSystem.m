@@ -67,6 +67,9 @@ EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFa
 EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
 EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
 
+// Attribute keys
+EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
+
 typedef enum {
   // Unable to unmount a dead FUSE files system located at mount point.
   GMUserFileSystem_ERROR_UNMOUNT_DEADFS = 1000,
@@ -502,11 +505,27 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // nlink
   NSNumber* nlink = [attributes objectForKey:NSFileReferenceCount];
   stbuf->st_nlink = [nlink longValue];
-      
+
+  // flags
+  NSNumber* flags = [attributes objectForKey:kGMUserFileSystemFileFlagsKey];
+  if (flags) {
+    stbuf->st_flags = [flags longValue];
+  } else {
+    // Just in case they tried to use NSFileImmutable or NSFileAppendOnly
+    NSNumber* immutableFlag = [attributes objectForKey:NSFileImmutable];
+    if (immutableFlag && [immutableFlag boolValue]) {
+      stbuf->st_flags |= UF_IMMUTABLE;
+    }
+    NSNumber* appendFlag = [attributes objectForKey:NSFileAppendOnly];
+    if (appendFlag && [appendFlag boolValue]) {
+      stbuf->st_flags |= UF_APPEND;
+    }
+  }
+  
   // TODO: For the timespec, there is a .tv_nsec (= nanosecond) part as well.
   // Since the NSDate returns a double, we can fill this in as well.
 
-  // mtime, atime
+  // mtime, atime: We just set atime = mtime if it is provided.
   NSDate* mdate = [attributes objectForKey:NSFileModificationDate];
   if (mdate) {
     time_t t = (time_t) [mdate timeIntervalSince1970];
@@ -514,8 +533,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     stbuf->st_atimespec.tv_sec = t;
   }
 
-  // ctime  TODO: ctime is not "creation time" rather it's the last time the 
-  // inode was changed.  mtime would probably be a closer approximation.
+  // ctime: The ctime is actually not "creation time". It is the change-time, 
+  // the last time the inode was changed. 
+  // TODO: Because we'd rather support "birthtime", set a mount-time option
+  // that will cause the kernel to treat ctime as bithtime and set the ctime to 
+  // be the same as mtime. Hopefully in the future we will have an expanded stat 
+  // structure that will support all times.
   NSDate* cdate = [attributes objectForKey:NSFileCreationDate];
   if (cdate) {
     stbuf->st_ctimespec.tv_sec = [cdate timeIntervalSince1970];
