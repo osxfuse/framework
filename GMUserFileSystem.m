@@ -521,27 +521,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       stbuf->st_flags |= UF_APPEND;
     }
   }
-  
-  // TODO: For the timespec, there is a .tv_nsec (= nanosecond) part as well.
-  // Since the NSDate returns a double, we can fill this in as well.
 
-  // mtime, atime: We just set atime = mtime if it is provided.
+  // atime, mtime, ctime: We set them all to mtime if it is provided.
   NSDate* mdate = [attributes objectForKey:NSFileModificationDate];
   if (mdate) {
-    time_t t = (time_t) [mdate timeIntervalSince1970];
-    stbuf->st_mtimespec.tv_sec = t;
-    stbuf->st_atimespec.tv_sec = t;
-  }
+    static const double kNanoSecondsPerSecond = 1000000000.0;
+    const double seconds_dp = [mdate timeIntervalSince1970];
+    const time_t t_sec = (time_t) seconds_dp;
+    const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
 
-  // ctime: The ctime is actually not "creation time". It is the change-time, 
-  // the last time the inode was changed. 
-  // TODO: Because we'd rather support "birthtime", set a mount-time option
-  // that will cause the kernel to treat ctime as bithtime and set the ctime to 
-  // be the same as mtime. Hopefully in the future we will have an expanded stat 
-  // structure that will support all times.
-  NSDate* cdate = [attributes objectForKey:NSFileCreationDate];
-  if (cdate) {
-    stbuf->st_ctimespec.tv_sec = [cdate timeIntervalSince1970];
+    stbuf->st_mtimespec.tv_sec = t_sec;
+    stbuf->st_mtimespec.tv_nsec = t_nsec;
+    stbuf->st_atimespec = stbuf->st_mtimespec;
+    stbuf->st_ctimespec = stbuf->st_mtimespec;
   }
 
   // Size for regular files.
