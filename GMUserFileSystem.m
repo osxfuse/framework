@@ -70,6 +70,9 @@ EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmou
 // Attribute keys
 EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
 
+// Used for time conversions to/from tv_nsec.
+static const double kNanoSecondsPerSecond = 1000000000.0;
+
 typedef enum {
   // Unable to unmount a dead FUSE files system located at mount point.
   GMUserFileSystem_ERROR_UNMOUNT_DEADFS = 1000,
@@ -525,7 +528,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // atime, mtime, ctime: We set them all to mtime if it is provided.
   NSDate* mdate = [attributes objectForKey:NSFileModificationDate];
   if (mdate) {
-    static const double kNanoSecondsPerSecond = 1000000000.0;
     const double seconds_dp = [mdate timeIntervalSince1970];
     const time_t t_sec = (time_t) seconds_dp;
     const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
@@ -1247,8 +1249,11 @@ static int fusefm_utimens(const char* path, const struct timespec tv[2]) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = 0;  // NOTE: Return success by default.
   @try {
+    const NSTimeInterval mtime_ns = tv[1].tv_nsec;
+    const NSTimeInterval mtime_sec =
+      tv[1].tv_sec + (mtime_ns / kNanoSecondsPerSecond);
     NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-    NSDate* modification = [NSDate dateWithTimeIntervalSince1970:tv[1].tv_sec];
+    NSDate* modification = [NSDate dateWithTimeIntervalSince1970:mtime_sec];
     [attribs setObject:modification forKey:NSFileModificationDate];
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
