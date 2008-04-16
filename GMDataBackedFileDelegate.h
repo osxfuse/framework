@@ -48,5 +48,20 @@
                size:(size_t)size 
              offset:(off_t)offset 
               error:(NSError **)error;
+@end
+
+@interface GMMutableDataBackedFileDelegate : GMDataBackedFileDelegate
+
++ (GMMutableDataBackedFileDelegate *)fileDelegateWithData:(NSMutableData *)data;
+
+- (id)initWithMutableData:(NSMutableData *)data;
+
+- (int)writeFromBuffer:(const char *)buffer 
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
+
+- (BOOL)truncateToOffset:(off_t)offset 
+                   error:(NSError **)error;
 
 @end

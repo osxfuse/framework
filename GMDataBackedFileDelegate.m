@@ -71,3 +71,40 @@
 }
 
 @end
+
+@implementation GMMutableDataBackedFileDelegate
+
++ (GMMutableDataBackedFileDelegate *)fileDelegateWithData:(NSMutableData *)data {
+  return [[[self alloc] initWithMutableData:data] autorelease];
+}
+
+- (id)initWithMutableData:(NSMutableData *)data {
+  if ((self = [super initWithData:data])) {
+  }
+  return self;
+}
+
+- (int)writeFromBuffer:(const char *)buffer 
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error {
+  // Take the lazy way out.  We just extend the NSData to be as large as needed
+  // and then replace whatever bytes they want to write.
+  NSMutableData* data = (NSMutableData*)data_;
+  if ([data length] < (offset + size)) {
+    int bytesBeyond = (offset + size) - [data length];
+    [(NSMutableData *)data increaseLengthBy:bytesBeyond];
+  }
+  NSRange range = NSMakeRange(offset, size);
+  [data replaceBytesInRange:range withBytes:buffer];
+  return size;
+}
+
+- (BOOL)truncateToOffset:(off_t)offset 
+                   error:(NSError **)error {
+  NSMutableData* data = (NSMutableData*)data_;
+  [data setLength:offset];
+  return YES;
+}
+
+@end

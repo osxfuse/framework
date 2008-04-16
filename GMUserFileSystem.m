@@ -675,23 +675,30 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
   // Still unable to open the file; maybe it is an Icon\r or AppleDouble?
   if ([internal_ shouldCheckForResource]) {
-    // Is it an Icon\r file that we handle?  TODO: Should we make sure that the dir has a custom icon?
+    NSData* data = nil;  // Synthesized data that we provide a file delegate for.
+
+    // Is it an Icon\r file that we handle?  
+    // TODO: Should we make sure that the dir has a custom icon?
     if ([self isDirectoryIconAtPath:path dirPath:nil]) {
-      NSData* data = [NSData data];  // The Icon\r file is empty.
-      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
-      return YES;
+      data = [NSData data];  // The Icon\r file is empty.
     }
 
     // (Tiger Only): Maybe it is an AppleDouble file that we handle?
     if ([internal_ isTiger]) {
       NSString* realPath;
       if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
-        NSData* data = [self appleDoubleContentsAtPath:realPath];
-        if (data != nil) {
-          *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
-          return YES;
-        }
+        data = [self appleDoubleContentsAtPath:realPath];
       }
+    }
+    if (data != nil) {
+      if ((mode & O_ACCMODE) == O_RDONLY) {
+        *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+      } else {
+        NSMutableData* mutableData = [NSMutableData dataWithData:data];
+        *fileDelegate = 
+          [GMMutableDataBackedFileDelegate fileDelegateWithData:mutableData];
+      }
+      return YES;  // Handled by a synthesized file delegate.
     }
   }
   
@@ -1593,7 +1600,7 @@ static struct fuse_operations fusefm_oper = {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemMountFailed object:self
                       userInfo:userInfo];
-}  
+}
 
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
