@@ -613,7 +613,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Linking an Item
 
-// TODO: fusefm version.
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
                  error:(NSError **)error {
@@ -627,7 +626,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Symbolic Links
 
-// TODO: The fusefm_ equivalent is not yet implemented.
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
                            error:(NSError **)error {
@@ -1530,6 +1528,46 @@ static int fusefm_rmdir(const char* path) {
   return ret;
 }
 
+static int fusefm_symlink(const char* path1, const char* path2) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -EACCES;
+  
+  @try {
+    NSError* error = nil;
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs createSymbolicLinkAtPath:[NSString stringWithUTF8String:path2]
+                 withDestinationPath:[NSString stringWithUTF8String:path1]
+                       error:&error]) {
+      ret = 0;  // Success!
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
+static int fusefm_link(const char* path1, const char* path2) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -EACCES;
+  
+  @try {
+    NSError* error = nil;
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs linkItemAtPath:[NSString stringWithUTF8String:path1]
+                    toPath:[NSString stringWithUTF8String:path2]
+                     error:&error]) {
+      ret = 0;  // Success!
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
 static void* fusefm_init(struct fuse_conn_info* conn) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
@@ -1577,7 +1615,9 @@ static struct fuse_operations fusefm_oper = {
   .mkdir = fusefm_mkdir,
   .unlink = fusefm_unlink,
   .rmdir = fusefm_rmdir,
+  .symlink = fusefm_symlink,
   .rename = fusefm_rename,
+  .link = fusefm_link,
   .truncate = fusefm_truncate,
   .ftruncate = fusefm_ftruncate,
   .chown = fusefm_chown,
