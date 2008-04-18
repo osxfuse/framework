@@ -620,7 +620,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [[internal_ delegate] linkItemAtPath:path toPath:otherPath error:error];
   }  
 
-  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // Note: error not in man page.
   return NO;
 }
 
@@ -635,7 +635,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                                     error:error];
   }
 
-  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // TODO: not in man page.
+  *error = [GMUserFileSystem errorWithCode:ENOTSUP];  // Note: error not in man page.
   return NO; 
 }
 
@@ -675,8 +675,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([internal_ shouldCheckForResource]) {
     NSData* data = nil;  // Synthesized data that we provide a file delegate for.
 
-    // Is it an Icon\r file that we handle?  
-    // TODO: Should we make sure that the dir has a custom icon?
+    // Is it an Icon\r file that we handle?
     if ([self isDirectoryIconAtPath:path dirPath:nil]) {
       data = [NSData data];  // The Icon\r file is empty.
     }

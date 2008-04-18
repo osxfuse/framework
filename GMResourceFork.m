@@ -92,7 +92,7 @@ typedef struct {
   UInt8 attributes;  // ResAttributes?: resource attributes.
   UInt8 resourceDataOffset1;  // These three bytes are the offset from beginning
   UInt8 resourceDataOffset2;  // of resource data to data for this resource.
-  UInt8 resourceDataOffset3;  //  TODO: What endian order, etc?
+  UInt8 resourceDataOffset3;
   UInt32 reservedForHandleToResource;  // Reserved, zero out.
 } __attribute__((packed)) ResourceReferenceListItem;
 
