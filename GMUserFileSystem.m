@@ -1112,8 +1112,10 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
   @try {
     NSError* error = nil;
     id object = nil;
-    NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-    [attribs setObject:[NSNumber numberWithLong:mode] forKey:NSFilePosixPermissions];
+    unsigned long perm = mode & ALLPERMS;
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm] 
+                                  forKey:NSFilePosixPermissions];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
                   attributes:attribs
@@ -1231,9 +1233,10 @@ static int fusefm_chmod(const char* path, mode_t mode) {
   int ret = 0;  // NOTE: Return success by default.
 
   @try {
-    NSMutableDictionary* attribs = [NSMutableDictionary dictionary];
-    [attribs setObject:[NSNumber numberWithLong:mode] 
-                forKey:NSFilePosixPermissions];
+    unsigned long perm = mode & ALLPERMS;
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm] 
+                                  forKey:NSFilePosixPermissions];
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
@@ -1473,10 +1476,13 @@ static int fusefm_mkdir(const char* path, mode_t mode) {
 
   @try {
     NSError* error = nil;
-    // TODO: Create proper attributes dictionary from mode_t.
+    unsigned long perm = mode & ALLPERMS;
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm]
+                                  forKey:NSFilePosixPermissions];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
-                       attributes:nil
+                       attributes:attribs
                             error:(NSError **)error]) {
       ret = 0;  // Success!
     } else {
