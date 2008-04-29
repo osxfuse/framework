@@ -229,8 +229,9 @@ extern NSString* const kGMUserFileSystemFileFlagsKey;
 //   NSFileGroupOwnerAccountID
 //   NSFileModificationDate
 //   NSFilePosixPermissions
+//   kGMUserFileSystemFileFlagsKey
 //   
-// BSD-equivalent: chown(2), chmod(2), utimes(2)
+// BSD-equivalent: chown(2), chmod(2), utimes(2), chflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error;

@@ -57,6 +57,7 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
+#define ENABLE_MAC_OS_X_SPECIFIC_OPS 1  // Set to 0 to build on Tiger
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
@@ -949,7 +950,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                 error:(NSError **)error {
   if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
     return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];
-  }  
+  }
   *error = [GMUserFileSystem errorWithCode:ENODEV];
   return NO;
 }
@@ -1600,6 +1601,34 @@ static void fusefm_destroy(void* private_data) {
   [pool release];
 }
 
+#if ENABLE_MAC_OS_X_SPECIFIC_OPS
+
+static int fusefm_chflags(const char* path, uint32_t flags) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = 0;  // NOTE: Return success by default.
+  @try {
+    NSError* error = nil;
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:flags]
+                                  forKey:kGMUserFileSystemFileFlagsKey];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
+#endif  // ENABLE_MAC_OS_X_SPECIFIC_OPS
+
+#undef MAYBE_USE_ERROR
+
 static struct fuse_operations fusefm_oper = {
   .init = fusefm_init,
   .destroy = fusefm_destroy,
@@ -1629,6 +1658,9 @@ static struct fuse_operations fusefm_oper = {
   .chmod = fusefm_chmod,
   .utimens = fusefm_utimens,
   .fsync = fusefm_fsync,
+#if ENABLE_MAC_OS_X_SPECIFIC_OPS
+  .chflags = fusefm_chflags,
+#endif
 };
 
 #pragma mark Internal Mount
