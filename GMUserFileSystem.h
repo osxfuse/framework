@@ -213,7 +213,9 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
 //   NSFilePosixPermissions
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
-//   NSFileCreationDate [May eventually be supported]
+//   NSFileCreationDate (if using 'xtimes' option)
+//   kGMUserFileSystemFileBackupDateKey (if using 'xtimes' option)
+//   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
 // BSD-equivalent: stat(2)
@@ -230,12 +232,15 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
                                           error:(NSError **)error;
 
-// The following keys may be present:
+// The following keys may be present (you must ignore unknown keys):
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
 //   NSFileModificationDate
 //   NSFilePosixPermissions
-//   kGMUserFileSystemFileFlagsKey
+//   NSFileCreationDate (if using 'xtimes' option)
+//   kGMUserFileSystemFileBackupDateKey (if using 'xtimes' option)
+//   kGMUserFileSystemFileChangeDateKey
+//   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //   
 // BSD-equivalent: chown(2), chmod(2), utimes(2), chflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
