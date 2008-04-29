@@ -108,6 +108,12 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
 extern NSString* const kGMUserFileSystemFileFlagsKey;
 
+// For st_ctimespec (see man 2 stat). Last file status change time.
+extern NSString* const kGMUserFileSystemFileChangeDateKey;
+
+// For file backup date.
+extern NSString* const kGMUserFileSystemFileBackupDateKey;
+
 #pragma mark -
 
 #pragma mark File Delegate Protocol

@@ -70,6 +70,8 @@ EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmou
 
 // Attribute keys
 EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
+EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
+EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 
 // Used for time conversions to/from tv_nsec.
 static const double kNanoSecondsPerSecond = 1000000000.0;
@@ -539,6 +541,16 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     stbuf->st_atimespec = stbuf->st_mtimespec;
     stbuf->st_ctimespec = stbuf->st_mtimespec;
   }
+  NSDate* cdate = [attributes objectForKey:kGMUserFileSystemFileChangeDateKey];
+  if (cdate) {
+    const double seconds_dp = [cdate timeIntervalSince1970];
+    const time_t t_sec = (time_t) seconds_dp;
+    const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;    
+    stbuf->st_ctimespec.tv_sec = t_sec;
+    stbuf->st_ctimespec.tv_nsec = t_nsec;
+  }
+  // TODO: kGMUserFileSystemFileAccessDateKey support.
 
   // Size for regular files.
   // TODO: Revisit size for directories.
@@ -916,6 +928,18 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
 
   return attributes;
+}
+
+- (NSDictionary *)extendedTimesOfItemAtPath:(NSString *)path
+                                      error:(NSError **)error {
+  id delegate = [internal_ delegate];
+  BOOL supportsAttributesSelector = 
+    [delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)];
+  if (!supportsAttributesSelector) {
+    *error = [GMUserFileSystem errorWithCode:ENOSYS];
+    return nil;
+  }
+  return [delegate attributesOfItemAtPath:path error:error];
 }
 
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
@@ -1625,6 +1649,131 @@ static int fusefm_chflags(const char* path, uint32_t flags) {
   return ret;
 }
 
+static int fusefm_exchange(const char* p1, const char* p2, unsigned long opts) {
+  return -ENOSYS;  // TODO: Support exchange call.
+}
+
+static int fusefm_getxtimes(const char* path, struct timespec* bkuptime, 
+                            struct timespec* crtime) {  
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOENT;
+  @try {
+    NSError* error = nil;
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    NSDictionary* attribs = 
+      [fs extendedTimesOfItemAtPath:[NSString stringWithUTF8String:path]
+                              error:&error];
+    if (attribs) {
+      ret = 0;
+      NSDate* creationDate = [attribs objectForKey:NSFileCreationDate];
+      if (creationDate) {
+        const double seconds_dp = [creationDate timeIntervalSince1970];
+        const time_t t_sec = (time_t) seconds_dp;
+        const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+        const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
+        crtime->tv_sec = t_sec;
+        crtime->tv_nsec = t_nsec;          
+      } else {
+        memset(crtime, 0, sizeof(crtime));
+      }
+      NSDate* backupDate = [attribs objectForKey:kGMUserFileSystemFileBackupDateKey];
+      if (backupDate) {
+        const double seconds_dp = [backupDate timeIntervalSince1970];
+        const time_t t_sec = (time_t) seconds_dp;
+        const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+        const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
+        bkuptime->tv_sec = t_sec;
+        bkuptime->tv_nsec = t_nsec;
+      } else {
+        memset(bkuptime, 0, sizeof(bkuptime));
+      }
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
+static int fusefm_setbkuptime(const char* path, const struct timespec* tv) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = 0;  // NOTE: Return success by default.
+  @try {
+    NSError* error = nil;
+    const NSTimeInterval time_ns = tv->tv_nsec;
+    const NSTimeInterval time_sec =
+      tv->tv_sec + (time_ns / kNanoSecondsPerSecond);
+    NSDate* date = [NSDate dateWithTimeIntervalSince1970:time_sec];
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:date
+                                  forKey:kGMUserFileSystemFileBackupDateKey];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
+static int fusefm_setchtime(const char* path, const struct timespec* tv) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = 0;  // NOTE: Return success by default.
+  @try {
+    NSError* error = nil;
+    const NSTimeInterval time_ns = tv->tv_nsec;
+    const NSTimeInterval time_sec =
+      tv->tv_sec + (time_ns / kNanoSecondsPerSecond);
+    NSDate* date = [NSDate dateWithTimeIntervalSince1970:time_sec];
+    NSDictionary* attribs = 
+    [NSDictionary dictionaryWithObject:date
+                                forKey:kGMUserFileSystemFileChangeDateKey];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
+static int fusefm_setcrtime(const char* path, const struct timespec* tv) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = 0;  // NOTE: Return success by default.
+  @try {
+    NSError* error = nil;
+    const NSTimeInterval time_ns = tv->tv_nsec;
+    const NSTimeInterval time_sec =
+      tv->tv_sec + (time_ns / kNanoSecondsPerSecond);
+    NSDate* date = [NSDate dateWithTimeIntervalSince1970:time_sec];
+    NSDictionary* attribs = 
+    [NSDictionary dictionaryWithObject:date
+                                forKey:NSFileCreationDate];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs setAttributes:attribs 
+             ofItemAtPath:[NSString stringWithUTF8String:path]
+                    error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
 #endif  // ENABLE_MAC_OS_X_SPECIFIC_OPS
 
 #undef MAYBE_USE_ERROR
@@ -1660,6 +1809,11 @@ static struct fuse_operations fusefm_oper = {
   .fsync = fusefm_fsync,
 #if ENABLE_MAC_OS_X_SPECIFIC_OPS
   .chflags = fusefm_chflags,
+  .exchange = fusefm_exchange,
+  .getxtimes = fusefm_getxtimes,
+  .setbkuptime = fusefm_setbkuptime,
+  .setchgtime = fusefm_setchtime,
+  .setcrtime = fusefm_setcrtime,
 #endif
 };
 
