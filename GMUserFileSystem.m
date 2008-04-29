@@ -786,6 +786,18 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
+- (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
+                  withItemAtPath:(NSString *)path2
+                           error:(NSError **)error {
+  if ([[internal_ delegate] respondsToSelector:@selector(exchangeDataOfItemAtPath:withItemAtPath:error:)]) {
+    return [[internal_ delegate] exchangeDataOfItemAtPath:path1
+                                           withItemAtPath:path2
+                                                    error:error];
+  }  
+  *error = [GMUserFileSystem errorWithCode:ENOSYS];
+  return NO;
+}
+
 #pragma mark Directory Contents
 
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
@@ -1650,7 +1662,22 @@ static int fusefm_chflags(const char* path, uint32_t flags) {
 }
 
 static int fusefm_exchange(const char* p1, const char* p2, unsigned long opts) {
-  return -ENOSYS;  // TODO: Support exchange call.
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOSYS;
+  @try {
+    NSError* error = nil;
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs exchangeDataOfItemAtPath:[NSString stringWithUTF8String:p1]
+                      withItemAtPath:[NSString stringWithUTF8String:p2]
+                               error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;  
 }
 
 static int fusefm_getxtimes(const char* path, struct timespec* bkuptime, 

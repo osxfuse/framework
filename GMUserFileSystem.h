@@ -287,6 +287,13 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
                     offset:(off_t)offset 
                      error:(NSError **)error;
 
+// Called to atomically exchange file data between path1 and path2.
+//
+// BSD-equivalent: exchangedata(2)
+- (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
+                  withItemAtPath:(NSString *)path2
+                           error:(NSError **)error;
+
 #pragma mark Creating an Item
 
 // BSD-equivalent: mkdir(2)
