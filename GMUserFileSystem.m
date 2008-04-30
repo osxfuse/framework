@@ -106,6 +106,8 @@ typedef enum {
   BOOL isTiger_;                  // Are we running on Tiger?
   BOOL shouldCheckForResource_;   // Try to handle FinderInfo/Resource Forks?
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
+  BOOL enableExtendedTimes_;  // Enable xtimes?
+  BOOL enableSetVolumeName_;  // Enable setvolname() support?
   id delegate_;
 }
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
@@ -122,6 +124,8 @@ extern long fuse_os_version_major(void);
   if ((self = [super init])) {
     status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
+    enableExtendedTimes_ = NO;
+    enableSetVolumeName_ = NO;
     [self setDelegate:delegate];
 
     // Version 10.4 requires ._ to appear in directory listings.
@@ -143,6 +147,10 @@ extern long fuse_os_version_major(void);
 - (GMUserFileSystemStatus)status { return status_; }
 - (void)setStatus:(GMUserFileSystemStatus)status { status_ = status; }
 - (BOOL)isThreadSafe { return isThreadSafe_; }
+- (BOOL)enableExtendedTimes { return enableExtendedTimes_; }
+- (void)setEnableExtendedTimes:(BOOL)val { enableExtendedTimes_ = val; }
+- (BOOL)enableSetVolumeName { return enableSetVolumeName_; }
+- (void)setEnableSetVolumeName:(BOOL)val { enableSetVolumeName_ = val; }
 - (BOOL)isTiger { return isTiger_; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (id)delegate { return delegate_; }
@@ -214,6 +222,13 @@ extern long fuse_os_version_major(void);
   return [internal_ delegate];
 }
 
+- (BOOL)enableExtendedTimes {
+  return [internal_ enableExtendedTimes];
+}
+- (BOOL)enableSetVolumeName {
+  return [internal_ enableSetVolumeName];
+}
+
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options {
   [self mountAtPath:mountPath
@@ -229,7 +244,14 @@ extern long fuse_os_version_major(void);
   [internal_ setMountPath:mountPath];
   NSMutableArray* optionsCopy = [NSMutableArray array];
   for (int i = 0; i < [options count]; ++i) {
-    [optionsCopy addObject:[[[options objectAtIndex:i] copy] autorelease]];
+    NSString* option = [options objectAtIndex:i];
+    if ([option isEqualToString:@"xtimes"]) {
+      [internal_ setEnableExtendedTimes:YES];
+    } else if ([option isEqualToString:@"setvolname"]) {
+      [internal_ setEnableSetVolumeName:YES];
+    } else {
+      [optionsCopy addObject:[[option copy] autorelease]];
+    }
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -1620,6 +1642,15 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
   }
   @catch (id exception) { }
 
+#if ENABLE_MAC_OS_X_SPECIFIC_OPS
+  if ([fs enableExtendedTimes]) {
+    FUSE_ENABLE_XTIMES(conn);
+  }
+  if ([fs enableSetVolumeName]) {
+    FUSE_ENABLE_SETVOLNAME(conn);
+  }
+#endif  // ENABLE_MAC_OS_X_SPECIFIC_OPS
+
   [pool release];
   return fs;
 }
@@ -1633,7 +1664,6 @@ static void fusefm_destroy(void* private_data) {
   }
   @catch (id exception) { }
   [fs release];
-
   [pool release];
 }
 
