@@ -38,6 +38,7 @@
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
+#include <fuse/fuse_darwin.h>
 
 #include <string.h>
 #include <errno.h>
@@ -115,7 +116,6 @@ typedef enum {
 @end
 @implementation GMUserFileSystemInternal
 
-extern long fuse_os_version_major(void);
 - (id)init {
   return [self initWithDelegate:nil isThreadSafe:NO];
 }
@@ -129,7 +129,7 @@ extern long fuse_os_version_major(void);
     [self setDelegate:delegate];
 
     // Version 10.4 requires ._ to appear in directory listings.
-    long version = fuse_os_version_major();
+    long version = fuse_os_version_major_np();
     isTiger_ = (version < 9);
   }
   return self;
@@ -287,7 +287,6 @@ extern long fuse_os_version_major(void);
 }
 
 #define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2, u_int32_t)
-extern int fuse_chan_fd_np();
 static const int kMaxWaitForMountTries = 50;
 static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (void)waitUntilMounted {
@@ -295,7 +294,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   
   for (int i = 0; i < kMaxWaitForMountTries; ++i) {
     UInt32 handShakeComplete = 0;
-    int ret = ioctl(fuse_chan_fd_np(), 
+    int ret = ioctl(fuse_device_fd_np([[internal_ mountPath] UTF8String]), 
                     FUSEDEVIOCGETHANDSHAKECOMPLETE, 
                     &handShakeComplete);
     if (ret == 0 && handShakeComplete) {
