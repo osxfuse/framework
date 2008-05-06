@@ -331,6 +331,7 @@
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
 					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
+					"${CUSTOM_CFLAGS}",
 				);
 				OTHER_LDFLAGS = (
 					"-lfuse",

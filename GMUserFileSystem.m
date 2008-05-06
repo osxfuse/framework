@@ -58,7 +58,13 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
-#define ENABLE_MAC_OS_X_SPECIFIC_OPS 1  // Set to 0 to build on Tiger
+#if ( !defined(MAC_OS_X_VERSION_10_5) || \
+      (defined(MACFUSE_TARGET_OS) &&     \
+       (MACFUSE_TARGET_OS < MAC_OS_X_VERSION_10_5)) )
+#define ENABLE_MAC_OS_X_SPECIFIC_OPS 0
+#else 
+#define ENABLE_MAC_OS_X_SPECIFIC_OPS 1
+#endif
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
@@ -344,6 +350,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemDidUnmount object:self
                       userInfo:userInfo];
+  [internal_ setStatus:GMUserFileSystem_NOT_MOUNTED];
 }
 
 #pragma mark Finder Info, Resource Forks and HFS headers
