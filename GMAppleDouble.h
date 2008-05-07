@@ -69,16 +69,39 @@ typedef enum {
   DoubleEntryDirectoryID = 15,
 } GMAppleDoubleEntryID;
 
+@interface GMAppleDoubleEntry : NSObject {
+  GMAppleDoubleEntryID entryID_;
+  NSData* data_;  // Format depends on entryID_
+}
+- (id)initWithEntryID:(GMAppleDoubleEntryID)entryID data:(NSData *)data;
+- (GMAppleDoubleEntryID)entryID;
+- (NSData *)data;
+@end
+
 @interface GMAppleDouble : NSObject {  
   NSMutableArray* entries_;
 }
 
+// An empty double file.
 + (GMAppleDouble *)appleDouble;
+
+// A double file pre-filled with entries from raw AppleDouble file data.
++ (GMAppleDouble *)appleDoubleWithData:(NSData *)data;
+
+// Adds an entry to the double file.
+- (void)addEntry:(GMAppleDoubleEntry *)entry;
 
 // Adds an entry to the double file. The given data is retained.
 - (void)addEntryWithID:(GMAppleDoubleEntryID)entryID data:(NSData *)data;
 
-// Constructs and returns raw data for the double file.
+// Parses raw AppleDouble file data and adds a GMAppleDoubleEntry for each entry
+// that is present. Returns YES iff it parsed correctly.
+- (BOOL)addEntriesFromAppleDoubleData:(NSData *)data;
+
+// Returns the current set of GMAppleDoubleEntry objects for this AppleDouble.
+- (NSArray *)entries;
+
+// Constructs and returns raw data for the AppleDouble file.
 - (NSData *)data;
 
 @end
