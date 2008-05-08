@@ -1414,9 +1414,13 @@ static int fusefm_readlink(const char *path, char *buf, size_t size)
 }
 
 static int fusefm_getxattr(const char *path, const char *name, char *value,
-                           size_t size) {
+                           size_t size, uint32_t position) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOATTR;
+  
+  NSLog(@"in getxattr, path=%s, name=%s, size=%d, position=%d",
+        path, name, size, position);
+  
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
@@ -1442,7 +1446,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
 }
 
 static int fusefm_setxattr(const char *path, const char *name, const char *value,
-                           size_t size, int flags) {
+                           size_t size, int flags, uint32_t position) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EPERM;
   @try {
