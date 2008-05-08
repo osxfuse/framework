@@ -1418,9 +1418,6 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOATTR;
   
-  NSLog(@"in getxattr, path=%s, name=%s, size=%d, position=%d",
-        path, name, size, position);
-  
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
