@@ -349,15 +349,17 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
                                       error:(NSError **)error;
 
 // BSD-equivalent: getxattr(2)
-- (NSData *)valueOfExtendedAttribute:(NSString *)name 
+- (NSData *)valueOfExtendedAttribute:(NSString *)name
                         ofItemAtPath:(NSString *)path
+                            position:(off_t)position
                                error:(NSError **)error;
 
 // BSD-equivalent: setxattr(2)
 - (BOOL)setExtendedAttribute:(NSString *)name
                 ofItemAtPath:(NSString *)path
                        value:(NSData *)value
-                       flags:(int)flags
+                    position:(off_t)position
+                     options:(int)options
                        error:(NSError **)error;
 
 // BSD-equivalent: removexattr(2)

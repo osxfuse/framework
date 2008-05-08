@@ -170,6 +170,20 @@ typedef enum {
 
 @end
 
+// Deprecated delegate methods that we still support for backward compatibility
+// with previously compiled file systems. This will be actively trimmed as 
+// new releases occur.
+@interface NSObject (GMUserFileSystemDeprecated)
+- (NSData *)valueOfExtendedAttribute:(NSString *)name
+                        ofItemAtPath:(NSString *)path
+                               error:(NSError **)error;
+- (BOOL)setExtendedAttribute:(NSString *)name
+                ofItemAtPath:(NSString *)path
+                       value:(NSData *)value
+                     flags:(int)flags
+                       error:(NSError **)error;
+@end
+
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
 
 // The filesystem for the current thread. Valid only during a fuse callback.
@@ -1031,12 +1045,24 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSData *)valueOfExtendedAttribute:(NSString *)name 
                         ofItemAtPath:(NSString *)path
+                            position:(off_t)position
                                error:(NSError **)error {
   id delegate = [internal_ delegate];
   NSData* data = nil;
-  BOOL xattrSupported = [delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)];
-  if (xattrSupported) {
-    data = [delegate valueOfExtendedAttribute:name ofItemAtPath:path error:error];
+  BOOL xattrSupported = NO;
+  if ([delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:position:error:)]) {
+    xattrSupported = YES;
+    data = [delegate valueOfExtendedAttribute:name 
+                                 ofItemAtPath:path 
+                                     position:position 
+                                        error:error];
+  } else if ([delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
+    // NOTE: Provided for backward compatibility with MacFUSE.framework version
+    // 1.5 and previous. This should be removed at some point.
+    xattrSupported = YES;
+    data = [delegate valueOfExtendedAttribute:name 
+                                 ofItemAtPath:path 
+                                        error:error];    
   }
 
   // On 10.5+ we might supply FinderInfo/ResourceFork as xattr for them.
@@ -1060,14 +1086,24 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)setExtendedAttribute:(NSString *)name 
                 ofItemAtPath:(NSString *)path 
                        value:(NSData *)value
-                       flags:(int) flags
+                    position:(off_t)position
+                     options:(int)options
                        error:(NSError **)error {
   id delegate = [internal_ delegate];
-  if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+  if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:position:options:error:)]) {
     return [delegate setExtendedAttribute:name 
                              ofItemAtPath:path 
                                     value:value
-                                    flags:flags
+                                 position:position
+                                  options:options
+                                    error:error]; 
+  } else if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+    // NOTE: Provided for backward compatibility with MacFUSE.framework version
+    // 1.5 and previous. This should be removed at some point.
+    return [delegate setExtendedAttribute:name 
+                             ofItemAtPath:path 
+                                    value:value
+                                    flags:options
                                     error:error];
   }  
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];
@@ -1423,6 +1459,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSData *data = [fs valueOfExtendedAttribute:[NSString stringWithUTF8String:name]
                                    ofItemAtPath:[NSString stringWithUTF8String:path]
+                                       position:position
                                           error:&error];
     if (data != nil) {
       ret = [data length];  // default to returning size of buffer.
@@ -1443,7 +1480,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
 }
 
 static int fusefm_setxattr(const char *path, const char *name, const char *value,
-                           size_t size, int flags, uint32_t position) {
+                           size_t size, int options, uint32_t position) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EPERM;
   @try {
@@ -1452,7 +1489,8 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
     if ([fs setExtendedAttribute:[NSString stringWithUTF8String:name]
                     ofItemAtPath:[NSString stringWithUTF8String:path]
                            value:[NSData dataWithBytes:value length:size]
-                           flags:flags
+                        position:position
+                           options:options
                            error:&error]) {
       ret = 0;
     } else {
