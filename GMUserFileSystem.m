@@ -58,13 +58,6 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
-#if ( !defined(MAC_OS_X_VERSION_10_5) || \
-      (defined(MACFUSE_TARGET_OS) &&     \
-       (MACFUSE_TARGET_OS < MAC_OS_X_VERSION_10_5)) )
-#define ENABLE_MAC_OS_X_SPECIFIC_OPS 0
-#else 
-#define ENABLE_MAC_OS_X_SPECIFIC_OPS 1
-#endif
 #define EXPORT __attribute__((visibility("default")))
 
 // Notifications
@@ -1687,14 +1680,12 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
   }
   @catch (id exception) { }
 
-#if ENABLE_MAC_OS_X_SPECIFIC_OPS
   if ([fs enableExtendedTimes]) {
     FUSE_ENABLE_XTIMES(conn);
   }
   if ([fs enableSetVolumeName]) {
     FUSE_ENABLE_SETVOLNAME(conn);
   }
-#endif  // ENABLE_MAC_OS_X_SPECIFIC_OPS
 
   [pool release];
   return fs;
@@ -1711,8 +1702,6 @@ static void fusefm_destroy(void* private_data) {
   [fs release];
   [pool release];
 }
-
-#if ENABLE_MAC_OS_X_SPECIFIC_OPS
 
 static int fusefm_chflags(const char* path, uint32_t flags) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -1876,8 +1865,6 @@ static int fusefm_setcrtime(const char* path, const struct timespec* tv) {
   return ret;
 }
 
-#endif  // ENABLE_MAC_OS_X_SPECIFIC_OPS
-
 #undef MAYBE_USE_ERROR
 
 static struct fuse_operations fusefm_oper = {
@@ -1909,14 +1896,12 @@ static struct fuse_operations fusefm_oper = {
   .chmod = fusefm_chmod,
   .utimens = fusefm_utimens,
   .fsync = fusefm_fsync,
-#if ENABLE_MAC_OS_X_SPECIFIC_OPS
   .chflags = fusefm_chflags,
   .exchange = fusefm_exchange,
   .getxtimes = fusefm_getxtimes,
   .setbkuptime = fusefm_setbkuptime,
   .setchgtime = fusefm_setchtime,
   .setcrtime = fusefm_setcrtime,
-#endif
 };
 
 #pragma mark Internal Mount
