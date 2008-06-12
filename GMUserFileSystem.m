@@ -623,6 +623,13 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Removing an Item
 
+- (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error {
+  if ([[internal_ delegate] respondsToSelector:@selector(removeDirectoryAtPath:error:)]) {
+    return [[internal_ delegate] removeDirectoryAtPath:path error:error];
+  }
+  return [self removeItemAtPath:path error:error];
+}
+
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error {
   if ([[internal_ delegate] respondsToSelector:@selector(removeItemAtPath:error:)]) {
     return [[internal_ delegate] removeItemAtPath:path error:error];
@@ -1618,8 +1625,8 @@ static int fusefm_rmdir(const char* path) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
-                       error:&error]) {
+    if ([fs removeDirectoryAtPath:[NSString stringWithUTF8String:path] 
+                            error:&error]) {
       ret = 0;  // Success!
     } else {
       MAYBE_USE_ERROR(ret, error);

@@ -321,6 +321,16 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
 #pragma mark Removing an Item
 
+// Remove the directory at the given path. This should not recursively remove
+// subdirectories. If not implemented, then removeItemAtPath will be called.
+// 
+// BSD-equivalent: rmdir(2)
+- (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error;
+
+// Remove the item at the given path. This should not recursively remove
+// subdirectories. If removeDirectoryAtPath is implemented, then that will
+// be called instead of this selector if the item is a directory.
+//
 // BSD-equivalent: rmdir(2), unlink(2)
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error;
 
