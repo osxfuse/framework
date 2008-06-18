@@ -182,8 +182,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFilePosixPermissions
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
-//   NSFileCreationDate (if using 'xtimes' option)
-//   kGMUserFileSystemFileBackupDateKey (if using 'xtimes' option)
+//   NSFileCreationDate                 (if supports extended dates)
+//   kGMUserFileSystemFileBackupDateKey (if supports extended dates)
 //   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
@@ -196,6 +196,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFileSystemFreeSize
 //   NSFileSystemNodes
 //   NSFileSystemFreeNodes
+//   kGMUserFileSystemVolumeSupportsExtendedDatesKey [NSNumber boolean]
+//   kGMUserFileSystemVolumeSupportsSetVolumeNameKey [NSNumber boolean]
 //
 // BSD-equivalent: statvfs(3)
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
@@ -206,8 +208,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFileGroupOwnerAccountID
 //   NSFileModificationDate
 //   NSFilePosixPermissions
-//   NSFileCreationDate (if using 'xtimes' option)
-//   kGMUserFileSystemFileBackupDateKey (if using 'xtimes' option)
+//   NSFileCreationDate                  (if supports extended dates)
+//   kGMUserFileSystemFileBackupDateKey  (if supports extended dates)
 //   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //   
@@ -393,6 +395,15 @@ extern NSString* const kGMUserFileSystemFileChangeDateKey;
 
 // For file backup date.
 extern NSString* const kGMUserFileSystemFileBackupDateKey;
+
+#pragma mark Additional Volume Attribute Keys
+
+// Boolean NSNumber for whether the volume supports extended dates such as
+// creation date and backup date.
+extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
+
+// Boolean NSNumber for whether or not the volume name may be changed.
+extern NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 

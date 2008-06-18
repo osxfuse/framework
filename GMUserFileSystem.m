@@ -72,6 +72,8 @@ EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmou
 EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
 EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
 EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
+EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
+EXPORT NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
 
 // FinderInfo and ResourceFork keys
 EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
@@ -112,8 +114,8 @@ typedef enum {
   BOOL isTiger_;                  // Are we running on Tiger?
   BOOL shouldCheckForResource_;   // Try to handle FinderInfo/Resource Forks?
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
-  BOOL enableExtendedTimes_;  // Enable xtimes?
-  BOOL enableSetVolumeName_;  // Enable setvolname() support?
+  BOOL supportsExtendedTimes_;  // Delegate supports create and backup times?
+  BOOL supportsSetVolumeName_;  // Delegate supports setvolname?
   id delegate_;
 }
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
@@ -129,8 +131,8 @@ typedef enum {
   if ((self = [super init])) {
     status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
-    enableExtendedTimes_ = NO;
-    enableSetVolumeName_ = NO;
+    supportsExtendedTimes_ = NO;
+    supportsSetVolumeName_ = NO;
     [self setDelegate:delegate];
 
     // Version 10.4 requires ._ to appear in directory listings.
@@ -152,10 +154,10 @@ typedef enum {
 - (GMUserFileSystemStatus)status { return status_; }
 - (void)setStatus:(GMUserFileSystemStatus)status { status_ = status; }
 - (BOOL)isThreadSafe { return isThreadSafe_; }
-- (BOOL)enableExtendedTimes { return enableExtendedTimes_; }
-- (void)setEnableExtendedTimes:(BOOL)val { enableExtendedTimes_ = val; }
-- (BOOL)enableSetVolumeName { return enableSetVolumeName_; }
-- (void)setEnableSetVolumeName:(BOOL)val { enableSetVolumeName_ = val; }
+- (BOOL)supportsExtendedTimes { return supportsExtendedTimes_; }
+- (void)setSupportsExtendedTimes:(BOOL)val { supportsExtendedTimes_ = val; }
+- (BOOL)supportsSetVolumeName { return supportsSetVolumeName_; }
+- (void)setSupportsSetVolumeName:(BOOL)val { supportsSetVolumeName_ = val; }
 - (BOOL)isTiger { return isTiger_; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (id)delegate { return delegate_; }
@@ -250,10 +252,10 @@ typedef enum {
 }
 
 - (BOOL)enableExtendedTimes {
-  return [internal_ enableExtendedTimes];
+  return [internal_ supportsExtendedTimes];
 }
 - (BOOL)enableSetVolumeName {
-  return [internal_ enableSetVolumeName];
+  return [internal_ supportsSetVolumeName];
 }
 
 - (void)mountAtPath:(NSString *)mountPath 
@@ -272,13 +274,7 @@ typedef enum {
   NSMutableArray* optionsCopy = [NSMutableArray array];
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
-    if ([option isEqualToString:@"xtimes"]) {
-      [internal_ setEnableExtendedTimes:YES];
-    } else if ([option isEqualToString:@"setvolname"]) {
-      [internal_ setEnableSetVolumeName:YES];
-    } else {
-      [optionsCopy addObject:[[option copy] autorelease]];
-    }
+    [optionsCopy addObject:[[option copy] autorelease]];
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -348,6 +344,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (void)fuseInit {
   [internal_ setStatus:GMUserFileSystem_INITIALIZING];
+
+  NSError* error = nil;
+  NSDictionary* attribs = [self attributesOfFileSystemForPath:@"/" error:&error];
+  if (attribs) {
+    NSNumber* supports;
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsExtendedDatesKey];
+    if (supports && [supports boolValue]) {
+      [internal_ setSupportsExtendedTimes:YES];
+    }
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsSetVolumeNameKey];
+    if (supports && [supports boolValue]) {
+      [internal_ setSupportsSetVolumeName:YES];
+    }    
+  }
   
   // The mount point won't actually show up until this winds its way
   // back through the kernel after this routine returns. In order to post
