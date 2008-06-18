@@ -103,17 +103,6 @@ extern NSString* const kGMUserFileSystemDidMount;
 // Notification sent after the filesystem is successfully unmounted.
 extern NSString* const kGMUserFileSystemDidUnmount;
 
-#pragma mark Additional Item Attribute Keys
-
-// For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
-extern NSString* const kGMUserFileSystemFileFlagsKey;
-
-// For st_ctimespec (see man 2 stat). Last file status change time.
-extern NSString* const kGMUserFileSystemFileChangeDateKey;
-
-// For file backup date.
-extern NSString* const kGMUserFileSystemFileBackupDateKey;
-
 #pragma mark -
 
 #pragma mark File Delegate Protocol
@@ -153,26 +142,6 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
 - (void)willMount;
 - (void)willUnmount;
-
-@end
-
-@interface NSObject (GMUserFileSystemResourceForks)
-// Implementing any GMUserFileSystemResourceForks method turns on automatic 
-// handling of FinderInfo and ResourceForks. In 10.5 and later these are 
-// provided via extended attributes while in 10.4 we use "._" files.
-
-// The Finder flags to use for the given path. Include kHasCustomIcon if you
-// want to display a custom icon for a file or directory. If you do not
-// implement this then iconDataForPath will be called instead to probe for the 
-// existence of a custom icon.
-- (UInt16)finderFlagsAtPath:(NSString *)path;
-
-// The raw .icns file data to use as the custom icon for the file/directory.
-// Return nil if the path does not have a custom icon.
-- (NSData *)iconDataAtPath:(NSString *)path;
-
-// The url for the .webloc file at path. This is only called for .webloc files.
-- (NSURL *)URLOfWeblocAtPath:(NSString *)path;
 
 @end
 
@@ -378,3 +347,63 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
                           error:(NSError **)error;
 
 @end
+
+@interface NSObject (GMUserFileSystemResourceForks)
+// Implementing any GMUserFileSystemResourceForks method turns on automatic 
+// handling of FinderInfo and ResourceForks. In 10.5 and later these are 
+// provided via extended attributes while in 10.4 we use "._" files. Typically,
+// it only makes sense to use these for a read-only file system.
+
+// Returns a dictionary of FinderInfo attributes at the given path. Return nil
+// or a dictionary with no relevant keys if there is no FinderInfo data. If a 
+// custom icon is desired, then use Finder flags with the kHasCustomIcon bit set 
+// (preferred) and/or the kGMUserFileSystemCustonIconDataKey, and don't forget
+// to implement resourceAttributesAtPath:error: below. The following keys 
+// are currently supported (unknown keys are ignored):
+//   NSFileHFSTypeCode
+//   NSFileHFSCreatorCode
+//   kGMUserFileSystemFinderFlagsKey (NSNumber Uint16 Finder flags)
+//   kGMUserFileSystemFinderExtendedFlagsKey (NSNumber Uint16)
+//   kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
+//   TODO: kGMUserFileSystemLabelNumberKey   (NSNumber)
+//
+// BSD-equivalent: getxattr(2)
+- (NSDictionary *)finderAttributesAtPath:(NSString *)path 
+                                   error:(NSError **)error;
+
+// Returns a dictionary of ResourceFork attributes at the given path. Return nil
+// or a dictionary with no relevant keys if there is no resource fork data.
+// The following keys are currently supported (unknown keys are ignored):
+//   kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
+//   kGMUserFileSystemWeblocURLkey [NSURL, only valid for .webloc files]
+//
+// BSD-equivalent: getxattr(2)
+- (NSDictionary *)resourceAttributesAtPath:(NSString *)path
+                                     error:(NSError **)error;
+
+@end
+
+#pragma mark Additional Item Attribute Keys
+
+// For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
+extern NSString* const kGMUserFileSystemFileFlagsKey;
+
+// For st_ctimespec (see man 2 stat). Last file status change time.
+extern NSString* const kGMUserFileSystemFileChangeDateKey;
+
+// For file backup date.
+extern NSString* const kGMUserFileSystemFileBackupDateKey;
+
+#pragma mark Additional Finder and Resource Fork keys
+
+// For FinderInfo flags (i.e. kHasCustomIcon). See CarbonCore/Finder.h.
+extern NSString* const kGMUserFileSystemFinderFlagsKey;
+
+// For FinderInfo extended flags (i.e. kExtendedFlagHasCustomBadge).
+extern NSString* const kGMUserFileSystemFinderExtendedFlagsKey;
+
+// For ResourceFork custom icon. NSData for raw .icns file.
+extern NSString* const kGMUserFileSystemCustomIconDataKey;
+
+// For ResourceFork webloc NSURL.
+extern NSString* const kGMUserFileSystemWeblocURLKey;

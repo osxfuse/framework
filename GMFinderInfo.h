@@ -37,7 +37,23 @@
 #import <Foundation/Foundation.h>
 
 @interface GMFinderInfo : NSObject {
+  UInt16 flags_;
+  UInt16 extendedFlags_;
+  OSType typeCode_;
+  OSType creatorCode_;
 }
+
++ (GMFinderInfo *)finderInfo;
+
+- (void)setFlags:(UInt16)flags;
+- (void)setExtendedFlags:(UInt16)extendedFlags;
+- (void)setTypeCode:(OSType)typeCode;
+- (void)setCreatorCode:(OSType)creatorCode;
+
+// Constructs the raw data for the FinderInfo.
+- (NSData *)data;
+
+// -- Deprecated Convenience Methods --
 
 // Create raw data for FinderInfo with the given flags. See header 
 // CoreServices/CarbonCore/Finder.h for what flags can be used.

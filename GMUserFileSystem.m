@@ -73,6 +73,12 @@ EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFl
 EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
 EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 
+// FinderInfo and ResourceFork keys
+EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
+EXPORT NSString* const kGMUserFileSystemFinderExtendedFlagsKey = @"kGMUserFileSystemFinderExtendedFlagsKey";
+EXPORT NSString* const kGMUserFileSystemCustomIconDataKey = @"kGMUserFileSystemCustomIconDataKey";
+EXPORT NSString* const kGMUserFileSystemWeblocURLKey = @"kGMUserFileSystemWeblocURLKey";
+
 // Used for time conversions to/from tv_nsec.
 static const double kNanoSecondsPerSecond = 1000000000.0;
 
@@ -156,6 +162,8 @@ typedef enum {
 - (void)setDelegate:(id)delegate { 
   delegate_ = delegate;
   shouldCheckForResource_ =
+    [delegate_ respondsToSelector:@selector(finderAttributesAtPath:error:)] ||
+    [delegate_ respondsToSelector:@selector(resourceAttributesAtPath:error:)] ||
     [delegate_ respondsToSelector:@selector(finderFlagsAtPath:)] ||
     [delegate_ respondsToSelector:@selector(iconDataAtPath:)]    ||
     [delegate_ respondsToSelector:@selector(URLOfWeblocAtPath:)];
@@ -175,6 +183,9 @@ typedef enum {
                        value:(NSData *)value
                      flags:(int)flags
                        error:(NSError **)error;
+- (UInt16)finderFlagsAtPath:(NSString *)path;
+- (NSData *)iconDataAtPath:(NSString *)path;
+- (NSURL *)URLOfWeblocAtPath:(NSString *)path;
 @end
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
@@ -190,11 +201,14 @@ typedef enum {
 - (void)mount:(NSDictionary *)args;
 - (void)waitUntilMounted;
 
-- (UInt16)finderFlagsAtPath:(NSString *)path;
+- (NSDictionary *)finderAttributesAtPath:(NSString *)path;
+- (NSDictionary *)resourceAttributesAtPath:(NSString *)path;
+
 - (BOOL)hasCustomIconAtPath:(NSString *)path;
 - (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath;
 - (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath;
-- (NSData *)resourceForkContentsAtPath:(NSString *)path;
+- (NSData *)finderDataForAttributes:(NSDictionary *)attributes;
+- (NSData *)resourceDataForAttributes:(NSDictionary *)attributes;
 - (NSData *)appleDoubleContentsAtPath:(NSString *)path;
 
 - (BOOL)fillStatBuffer:(struct stat *)stbuf 
@@ -362,31 +376,101 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Finder Info, Resource Forks and HFS headers
 
-- (UInt16)finderFlagsAtPath:(NSString *)path {
+- (NSDictionary *)finderAttributesAtPath:(NSString *)path {
   UInt16 flags = 0;
 
   // If a directory icon, we'll make invisible and update the path to parent.
   if ([self isDirectoryIconAtPath:path dirPath:&path]) {
     flags |= kIsInvisible;
   }
-
+  
   id delegate = [internal_ delegate];
-  if ([delegate respondsToSelector:@selector(finderFlagsAtPath:)]) {
+  if ([delegate respondsToSelector:@selector(finderAttributesAtPath:error:)]) {
+    NSError* error = nil;
+    NSDictionary* dict = [delegate finderAttributesAtPath:path error:&error];
+    if (dict != nil) {
+      if ([dict objectForKey:kGMUserFileSystemCustomIconDataKey]) {
+        // They have custom icon data, so make sure the FinderFlags bit is set.
+        flags |= kHasCustomIcon;
+      }
+      if (flags != 0) {
+        // May need to update kGMUserFileSystemFinderFlagsKey if different.
+        NSNumber* finderFlags = [dict objectForKey:kGMUserFileSystemFinderFlagsKey];
+        if (finderFlags != nil) {
+          UInt16 tmp = (UInt16)[finderFlags longValue];
+          if (flags == tmp) {
+            return dict;  // They already have our desired flags.
+          }          
+          flags |= tmp;
+        }
+        // Doh! We need to create a new dict with the updated flags key.
+        NSMutableDictionary* newDict = 
+          [NSMutableDictionary dictionaryWithDictionary:dict];
+        [newDict setObject:[NSNumber numberWithLong:flags] 
+                    forKey:kGMUserFileSystemFinderFlagsKey];
+        return newDict;
+      }
+      return dict;
+    }
+    // Fall through and create dictionary based on flags if necessary.
+  } else if ([delegate respondsToSelector:@selector(finderFlagsAtPath:)]) {
     flags |= [delegate finderFlagsAtPath:path];
   } else if ([delegate respondsToSelector:@selector(iconDataAtPath:)] &&
              [delegate iconDataAtPath:path] != nil) {
     flags |= kHasCustomIcon;
   }
-  return flags;
+  if (flags != 0) {
+    return [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:flags]
+                                       forKey:kGMUserFileSystemFinderFlagsKey];
+  }
+  return nil;
+}
+
+- (NSDictionary *)resourceAttributesAtPath:(NSString *)path {
+  id delegate = [internal_ delegate];
+  if ([delegate respondsToSelector:@selector(resourceAttributesAtPath:error:)]) {
+    NSError* error = nil;
+    return [delegate resourceAttributesAtPath:path error:&error];
+  }
+
+  // Support for deprecated selectors.
+  NSURL* url = nil;
+  if ([path hasSuffix:@".webloc"] &&
+      [delegate respondsToSelector:@selector(URLOfWeblocAtPath:)]) {
+    url = [delegate URLOfWeblocAtPath:path];
+  }
+  NSData* imageData = nil;
+  if ([delegate respondsToSelector:@selector(iconDataAtPath:)]) {
+    imageData = [delegate iconDataAtPath:path];
+  }
+  if (imageData || url) {
+    NSMutableDictionary* dict = [NSMutableDictionary dictionary];
+    if (imageData) {
+      [dict setObject:imageData forKey:kGMUserFileSystemCustomIconDataKey];
+    }
+    if (url) {
+      [dict setObject:url forKey:kGMUserFileSystemWeblocURLKey];
+    }
+    return dict;
+  }
+  return nil;
 }
 
 - (BOOL)hasCustomIconAtPath:(NSString *)path {
   if ([path isEqualToString:@"/"]) {
     return NO;  // For a volume icon they should use the volicon= option.
   }
-  UInt16 flags = [self finderFlagsAtPath:path];
-  return (flags & kHasCustomIcon) == kHasCustomIcon;
-}
+  NSDictionary* finderAttribs = [self finderAttributesAtPath:path];
+  if (finderAttribs) {
+    NSNumber* finderFlags = 
+      [finderAttribs objectForKey:kGMUserFileSystemFinderFlagsKey];
+    if (finderFlags) {
+      UInt16 flags = (UInt16)[finderFlags longValue];
+      return (flags & kHasCustomIcon) == kHasCustomIcon;
+    }
+  }
+  return NO;
+  }
 
 - (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath {
   NSString* name = [path lastPathComponent];
@@ -412,35 +496,73 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
-- (NSData *)resourceForkContentsAtPath:(NSString *)path {
-  NSURL* url = nil;
-  if ([path hasSuffix:@".webloc"] &&
-       [[internal_ delegate] respondsToSelector:@selector(URLOfWeblocAtPath:)]) {
-    url = [[internal_ delegate] URLOfWeblocAtPath:path];
+// If the given attribs dictionary contains any FinderInfo attributes then 
+// returns NSData for FinderInfo; otherwise returns nil.
+- (NSData *)finderDataForAttributes:(NSDictionary *)attribs {
+  if (!attribs) { 
+    return nil;
   }
-  NSData* imageData = nil;
-  if ([[internal_ delegate] respondsToSelector:@selector(iconDataAtPath:)]) {
-    imageData = [[internal_ delegate] iconDataAtPath:path];
+  
+  GMFinderInfo* info = [GMFinderInfo finderInfo];
+  BOOL attributeFound = NO;  // Have we found at least one relevant attribute?
+
+  NSNumber* flags = [attribs objectForKey:kGMUserFileSystemFinderFlagsKey];
+  if (flags) {
+    attributeFound = YES;
+    [info setFlags:(UInt16)[flags longValue]];
   }
-  if (imageData || url) {
-    GMResourceFork* fork = [GMResourceFork resourceFork];
-    if (imageData) {
-      [fork addResourceWithType:'icns'
-                          resID:kCustomIconResource // -16455
-                           name:nil
-                           data:imageData];
-    }
-    if (url) {
-      NSString* urlString = [url absoluteString];
-      NSData* data = [urlString dataUsingEncoding:NSUTF8StringEncoding];
-      [fork addResourceWithType:'url '
-                          resID:256
-                           name:nil
-                           data:data];
-    }
-    return [fork data];
+  
+  NSNumber* extendedFlags = 
+    [attribs objectForKey:kGMUserFileSystemFinderExtendedFlagsKey];
+  if (extendedFlags) {
+    attributeFound = YES;
+    [info setExtendedFlags:(UInt16)[extendedFlags longValue]];
   }
-  return nil;
+  
+  NSNumber* typeCode = [attribs objectForKey:NSFileHFSTypeCode];
+  if (typeCode) {
+    attributeFound = YES;
+    [info setTypeCode:(OSType)[typeCode longValue]];
+  }
+
+  NSNumber* creatorCode = [attribs objectForKey:NSFileHFSCreatorCode];
+  if (creatorCode) {
+    attributeFound = YES;
+    [info setCreatorCode:(OSType)[creatorCode longValue]];
+  }
+
+  return attributeFound ? [info data] : nil;
+}
+
+// If the given attribs dictionary contains any ResourceFork attributes then 
+// returns NSData for the ResourceFork; otherwise returns nil.
+- (NSData *)resourceDataForAttributes:(NSDictionary *)attribs {
+  if (!attribs) {
+    return nil;
+  }
+  
+  GMResourceFork* fork = [GMResourceFork resourceFork];
+  BOOL attributeFound = NO;  // Have we found at least one relevant attribute?
+  
+  NSData* imageData = [attribs objectForKey:kGMUserFileSystemCustomIconDataKey];
+  if (imageData) {
+    attributeFound = YES;
+    [fork addResourceWithType:'icns'
+                        resID:kCustomIconResource // -16455
+                         name:nil
+                         data:imageData];    
+  }
+  NSURL* url = [attribs objectForKey:kGMUserFileSystemWeblocURLKey];
+  if (url) {
+    attributeFound = YES;
+    NSString* urlString = [url absoluteString];
+    NSData* data = [urlString dataUsingEncoding:NSUTF8StringEncoding];
+    [fork addResourceWithType:'url '
+                        resID:256
+                         name:nil
+                         data:data];
+  }
+  return attributeFound ? [fork data] : nil;
 }
 
 // Returns the AppleDouble file contents, if any, for the given path. You should
@@ -449,21 +571,24 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 // On 10.5 and (hopefully) above, the Finder will end up using the extended
 // attributes and so we won't need to serve ._ files. 
 - (NSData *)appleDoubleContentsAtPath:(NSString *)path {
-  UInt16 flags = [self finderFlagsAtPath:path];
+  NSDictionary* finderAttributes = [self finderAttributesAtPath:path];
+  NSData* finderData = [self finderDataForAttributes:finderAttributes];
  
   // We treat the ._ for a directory and it's ._Icon\r file the same. This means
   // that we'll put extra resource-fork information in directory's ._ file even 
   // though it isn't needed. It's worth it given that it only affects 10.4.
   [self isDirectoryIconAtPath:path dirPath:&path];
 
-  NSData* resourceForkData = [self resourceForkContentsAtPath:path];
-  if (flags != 0 || resourceForkData != nil) {
+  NSDictionary* resourceAttributes = [self resourceAttributesAtPath:path];
+  NSData* resourceData = [self resourceDataForAttributes:resourceAttributes];
+  if (finderData != nil || resourceData != nil) {
     GMAppleDouble* doubleFile = [GMAppleDouble appleDouble];
-    NSData* finderInfo = [GMFinderInfo finderInfoWithFinderFlags:flags];
-    [doubleFile addEntryWithID:DoubleEntryFinderInfo data:finderInfo];
-    if (resourceForkData) {
+    if (finderData) {
+      [doubleFile addEntryWithID:DoubleEntryFinderInfo data:finderData];
+    }
+    if (resourceData) {
       [doubleFile addEntryWithID:DoubleEntryResourceFork 
-                            data:resourceForkData];
+                            data:resourceData];
     }
     return [doubleFile data];
   }
@@ -1068,13 +1193,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // On 10.5+ we might supply FinderInfo/ResourceFork as xattr for them.
   if (!data && [internal_ shouldCheckForResource] && ![internal_ isTiger]) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
-      int flags = [self finderFlagsAtPath:path];
-      if (flags != 0) {
-        data = [GMFinderInfo finderInfoWithFinderFlags:flags];
-      }
+      NSDictionary* finderAttributes = [self finderAttributesAtPath:path];
+      data = [self finderDataForAttributes:finderAttributes];
     } else if ([name isEqualToString:@"com.apple.ResourceFork"]) {
-      [self isDirectoryIconAtPath:path dirPath:&path];
-      data = [self resourceForkContentsAtPath:path];
+      [self isDirectoryIconAtPath:path dirPath:&path];  // Maybe update path.
+      NSDictionary* attributes = [self resourceAttributesAtPath:path];
+      data = [self resourceDataForAttributes:attributes];
     }
   }
   if (data == nil && *error == nil) {

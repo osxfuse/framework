@@ -76,6 +76,44 @@ typedef struct {
 
 @implementation GMFinderInfo
 
++ (GMFinderInfo *)finderInfo {
+  return [[[GMFinderInfo alloc] init] autorelease];
+}
+
+- (id)init {
+  if ((self = [super init])) {
+    flags_ = 0;
+    extendedFlags_ = 0;
+    typeCode_ = 0;
+    creatorCode_ = 0;
+  }
+  return self;
+}
+
+- (void)setFlags:(UInt16)flags {
+  flags_ = flags;
+}
+- (void)setExtendedFlags:(UInt16)extendedFlags {
+  extendedFlags_ = extendedFlags;
+}
+- (void)setTypeCode:(OSType)typeCode {
+  typeCode_ = typeCode;
+}
+- (void)setCreatorCode:(OSType)creatorCode {
+  creatorCode_ = creatorCode;
+}
+
+- (NSData *)data {
+  PackedFinderInfo info;
+  assert(sizeof(info) == 32);
+  memset(&info, 0, sizeof(info));
+  info.base.fileOrDirInfo.fileInfo.type = htonl(typeCode_);
+  info.base.fileOrDirInfo.fileInfo.creator = htonl(creatorCode_);
+  info.base.flags = htons(flags_);
+  info.extended.extendedFlags = htons(extendedFlags_);
+  return [NSData dataWithBytes:&info length:sizeof(info)];    
+}
+
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags {
   return [GMFinderInfo finderInfoWithFinderFlags:flags
                                         typeCode:0
@@ -85,13 +123,11 @@ typedef struct {
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags
                              typeCode:(OSType)typeCode
                           creatorCode:(OSType)creatorCode {
-  PackedFinderInfo info;
-  assert(sizeof(info) == 32);
-  memset(&info, 0, sizeof(info));
-  info.base.fileOrDirInfo.fileInfo.type = htonl(typeCode);
-  info.base.fileOrDirInfo.fileInfo.creator = htonl(creatorCode);
-  info.base.flags = htons(flags);
-  return [NSData dataWithBytes:&info length:sizeof(info)];  
+  GMFinderInfo* info = [GMFinderInfo finderInfo];
+  [info setFlags:flags];
+  [info setTypeCode:typeCode];
+  [info setCreatorCode:creatorCode];
+  return [info data];
 }
 
 @end
