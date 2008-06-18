@@ -117,6 +117,7 @@ typedef enum {
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
   BOOL supportsExtendedTimes_;  // Delegate supports create and backup times?
   BOOL supportsSetVolumeName_;  // Delegate supports setvolname?
+  BOOL isReadOnly_;  // Is this mounted read-only?
   id delegate_;
 }
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
@@ -134,6 +135,7 @@ typedef enum {
     isThreadSafe_ = isThreadSafe;
     supportsExtendedTimes_ = NO;
     supportsSetVolumeName_ = NO;
+    isReadOnly_ = NO;
     [self setDelegate:delegate];
 
     // Version 10.4 requires ._ to appear in directory listings.
@@ -161,6 +163,8 @@ typedef enum {
 - (void)setSupportsSetVolumeName:(BOOL)val { supportsSetVolumeName_ = val; }
 - (BOOL)isTiger { return isTiger_; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
+- (BOOL)isReadOnly { return isReadOnly_; }
+- (void)setIsReadOnly:(BOOL)val { isReadOnly_ = val; }
 - (id)delegate { return delegate_; }
 - (void)setDelegate:(id)delegate { 
   delegate_ = delegate;
@@ -275,6 +279,10 @@ typedef enum {
   NSMutableArray* optionsCopy = [NSMutableArray array];
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
+    if ([option caseInsensitiveCompare:@"rdonly"] == NSOrderedSame ||
+        [option caseInsensitiveCompare:@"ro"] == NSOrderedSame) {
+      [internal_ setIsReadOnly:YES];
+    }
     [optionsCopy addObject:[[option copy] autorelease]];
   }
   NSDictionary* args = 
@@ -1022,7 +1030,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                    error:(NSError **)error {
   // Set up default item attributes.
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
-  [attributes setObject:[NSNumber numberWithLong:0555]
+  BOOL isReadOnly = [internal_ isReadOnly];
+  [attributes setObject:[NSNumber numberWithLong:(isReadOnly ? 0555 : 0775)]
                  forKey:NSFilePosixPermissions];
   [attributes setObject:[NSNumber numberWithLong:1]
                  forKey:NSFileReferenceCount];    // 1 means "don't know"
