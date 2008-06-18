@@ -74,6 +74,7 @@ EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemF
 EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
 EXPORT NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
+EXPORT NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
 
 // FinderInfo and ResourceFork keys
 EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
@@ -1168,6 +1169,16 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
+- (BOOL)setAttributes:(NSDictionary *)attributes
+   ofFileSystemAtPath:(NSString *)path
+                error:(NSError **)error {
+  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofFileSystemAtPath:error:)]) {
+    return [[internal_ delegate] setAttributes:attributes ofFileSystemAtPath:path error:error];
+  }
+  *error = [GMUserFileSystem errorWithCode:ENOSYS];
+  return NO;
+}
+
 #pragma mark Extended Attributes
 
 - (NSArray *)extendedAttributesOfItemAtPath:path error:(NSError **)error {
@@ -1866,6 +1877,26 @@ static int fusefm_chflags(const char* path, uint32_t flags) {
   return ret;
 }
 
+static int fusefm_setvolname(const char* name) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  int ret = -ENOSYS;
+  @try {
+    NSError* error = nil;
+    NSDictionary* attribs = 
+      [NSDictionary dictionaryWithObject:[NSString stringWithUTF8String:name]
+                                  forKey:kGMUserFileSystemVolumeNameKey];
+    GMUserFileSystem* fs = [GMUserFileSystem currentFS];
+    if ([fs setAttributes:attribs ofFileSystemAtPath:@"/" error:&error]) {
+      ret = 0;
+    } else {
+      MAYBE_USE_ERROR(ret, error);
+    }
+  }
+  @catch (id exception) { }
+  [pool release];
+  return ret;
+}
+
 static int fusefm_exchange(const char* p1, const char* p2, unsigned long opts) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOSYS;
@@ -2038,6 +2069,7 @@ static struct fuse_operations fusefm_oper = {
   .utimens = fusefm_utimens,
   .fsync = fusefm_fsync,
   .chflags = fusefm_chflags,
+  .setvolname = fusefm_setvolname,
   .exchange = fusefm_exchange,
   .getxtimes = fusefm_getxtimes,
   .setbkuptime = fusefm_setbkuptime,

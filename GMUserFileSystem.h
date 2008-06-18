@@ -218,6 +218,14 @@ extern NSString* const kGMUserFileSystemDidUnmount;
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error;
 
+// The following keys may be present (you must ignore unknown keys):
+//   kGMUserFileSystemVolumeNameKey (NSString, if supports set volume name)
+//
+// BSD-equivalent: none
+- (BOOL)setAttributes:(NSDictionary *)attributes
+   ofFileSystemAtPath:(NSString *)path
+                error:(NSError **)error;
+
 #pragma mark File Contents
 
 // If contentsAtPath is implemented then you can skip open/release/read.
@@ -404,6 +412,9 @@ extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
 
 // Boolean NSNumber for whether or not the volume name may be changed.
 extern NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey;
+
+// NSString that is the volume name.
+extern NSString* const kGMUserFileSystemVolumeNameKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
