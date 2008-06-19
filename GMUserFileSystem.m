@@ -73,8 +73,10 @@ EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFl
 EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
 EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
-EXPORT NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
-EXPORT NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
+
+// TODO: Remove comment on EXPORT if/when setvolname is supported.
+/* EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
+/* EXPORT */ NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
 
 // FinderInfo and ResourceFork keys
 EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
@@ -1844,9 +1846,11 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
   if ([fs enableExtendedTimes]) {
     FUSE_ENABLE_XTIMES(conn);
   }
+#if 0  // TODO: Remove #if 0 if/when setvolname is supported.
   if ([fs enableSetVolumeName]) {
     FUSE_ENABLE_SETVOLNAME(conn);
   }
+#endif
 
   [pool release];
   return fs;

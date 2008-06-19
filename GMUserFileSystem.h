@@ -197,7 +197,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFileSystemNodes
 //   NSFileSystemFreeNodes
 //   kGMUserFileSystemVolumeSupportsExtendedDatesKey [NSNumber boolean]
-//   kGMUserFileSystemVolumeSupportsSetVolumeNameKey [NSNumber boolean]
 //
 // BSD-equivalent: statvfs(3)
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
@@ -216,14 +215,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // BSD-equivalent: chown(2), chmod(2), utimes(2), chflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
-                error:(NSError **)error;
-
-// The following keys may be present (you must ignore unknown keys):
-//   kGMUserFileSystemVolumeNameKey (NSString, if supports set volume name)
-//
-// BSD-equivalent: none
-- (BOOL)setAttributes:(NSDictionary *)attributes
-   ofFileSystemAtPath:(NSString *)path
                 error:(NSError **)error;
 
 #pragma mark File Contents
@@ -409,12 +400,6 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
 // Boolean NSNumber for whether the volume supports extended dates such as
 // creation date and backup date.
 extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
-
-// Boolean NSNumber for whether or not the volume name may be changed.
-extern NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey;
-
-// NSString that is the volume name.
-extern NSString* const kGMUserFileSystemVolumeNameKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
