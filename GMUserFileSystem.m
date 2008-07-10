@@ -523,7 +523,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if (!attribs) { 
     return nil;
   }
-  
+
   GMFinderInfo* info = [GMFinderInfo finderInfo];
   BOOL attributeFound = NO;  // Have we found at least one relevant attribute?
 
@@ -561,7 +561,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if (!attribs) {
     return nil;
   }
-  
+
   GMResourceFork* fork = [GMResourceFork resourceFork];
   BOOL attributeFound = NO;  // Have we found at least one relevant attribute?
   
@@ -1231,6 +1231,15 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [self isDirectoryIconAtPath:path dirPath:&path];  // Maybe update path.
       NSDictionary* attributes = [self resourceAttributesAtPath:path];
       data = [self resourceDataForAttributes:attributes];
+    }
+    if (data != nil && position > 0) {
+      // We have all the data, but they are only requesting a subrange.
+      size_t length = [data length];
+      if (position > length) {
+        *error = [GMUserFileSystem errorWithCode:ERANGE];
+        return nil;
+      }
+      data = [data subdataWithRange:NSMakeRange(position, length - position)];
     }
   }
   if (data == nil && *error == nil) {
