@@ -36,11 +36,16 @@
 //
 #import <Foundation/Foundation.h>
 
-@interface GMDataBackedFileDelegate : NSObject {
+#define GM_EXPORT __attribute__((visibility("default")))
+
+GM_EXPORT @interface GMDataBackedFileDelegate : NSObject {
+ @private
   NSData* data_;
 }
 
 + (GMDataBackedFileDelegate *)fileDelegateWithData:(NSData *)data;
+
+- (NSData *)data;
 
 - (id)initWithData:(NSData *)data;
 
@@ -50,7 +55,7 @@
               error:(NSError **)error;
 @end
 
-@interface GMMutableDataBackedFileDelegate : GMDataBackedFileDelegate
+GM_EXPORT @interface GMMutableDataBackedFileDelegate : GMDataBackedFileDelegate
 
 + (GMMutableDataBackedFileDelegate *)fileDelegateWithData:(NSMutableData *)data;
 
@@ -65,3 +70,5 @@
                    error:(NSError **)error;
 
 @end
+
+#undef GM_EXPORT

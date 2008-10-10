@@ -36,6 +36,8 @@
 //
 #import <Foundation/Foundation.h>
 
+#define GM_EXPORT __attribute__((visibility("default")))
+
 // Based on "AppleSingle/AppleDouble Formats for Foreign Files Developer's Note"
 //
 // Notes:
@@ -69,7 +71,8 @@ typedef enum {
   DoubleEntryDirectoryID = 15,
 } GMAppleDoubleEntryID;
 
-@interface GMAppleDoubleEntry : NSObject {
+GM_EXPORT @interface GMAppleDoubleEntry : NSObject {
+ @private
   GMAppleDoubleEntryID entryID_;
   NSData* data_;  // Format depends on entryID_
 }
@@ -78,7 +81,8 @@ typedef enum {
 - (NSData *)data;
 @end
 
-@interface GMAppleDouble : NSObject {  
+GM_EXPORT @interface GMAppleDouble : NSObject {  
+ @private
   NSMutableArray* entries_;
 }
 
@@ -105,3 +109,5 @@ typedef enum {
 - (NSData *)data;
 
 @end
+
+#undef GM_EXPORT

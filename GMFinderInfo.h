@@ -36,7 +36,10 @@
 //
 #import <Foundation/Foundation.h>
 
-@interface GMFinderInfo : NSObject {
+#define GM_EXPORT __attribute__((visibility("default")))
+
+GM_EXPORT @interface GMFinderInfo : NSObject {
+ @private
   UInt16 flags_;
   UInt16 extendedFlags_;
   OSType typeCode_;
@@ -66,3 +69,5 @@
                           creatorCode:(OSType)creatorCode;
 
 @end
+
+#undef GM_EXPORT

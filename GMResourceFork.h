@@ -36,9 +36,12 @@
 //
 #import <Foundation/Foundation.h>
 
+#define GM_EXPORT __attribute__((visibility("default")))
+
 @class GMResource;
 
-@interface GMResourceFork : NSObject {
+GM_EXPORT @interface GMResourceFork : NSObject {
+ @private
   NSMutableDictionary* resourcesByType_;
 }
 + (GMResourceFork *)resourceFork;
@@ -55,7 +58,8 @@
 
 @end
 
-@interface GMResource : NSObject {
+GM_EXPORT @interface GMResource : NSObject {
+ @private
   ResType resType_;  // FourCharCode, i.e. 'icns'
   ResID resID_;    // SInt16, i.e. 256 for webloc 'url ' contents.
   NSString* name_;  // Retained: The name of the resource.
@@ -77,3 +81,5 @@
 - (NSData *)data;
 
 @end
+
+#undef GM_EXPORT

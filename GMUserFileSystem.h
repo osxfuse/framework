@@ -36,10 +36,13 @@
 //
 #import <Foundation/Foundation.h>
 
+// See "64-bit Class and Instance Variable Access Control"
+#define GM_EXPORT __attribute__((visibility("default")))
+
 @class GMUserFileSystemInternal;
 
-@interface GMUserFileSystem : NSObject {
-  @private
+GM_EXPORT @interface GMUserFileSystem : NSObject {
+ @private
   GMUserFileSystemInternal* internal_;
 }
 
@@ -414,3 +417,5 @@ extern NSString* const kGMUserFileSystemCustomIconDataKey;
 
 // For ResourceFork webloc NSURL.
 extern NSString* const kGMUserFileSystemWeblocURLKey;
+
+#undef GM_EXPORT

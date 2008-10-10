@@ -58,31 +58,31 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
-#define EXPORT __attribute__((visibility("default")))
+#define GM_EXPORT __attribute__((visibility("default")))
 
 // Notifications
-EXPORT NSString* const kGMUserFileSystemErrorDomain = @"GMUserFileSystemErrorDomain";
-EXPORT NSString* const kGMUserFileSystemMountPathKey = @"mountPath";
-EXPORT NSString* const kGMUserFileSystemErrorKey = @"error";
-EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
-EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
-EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
+GM_EXPORT NSString* const kGMUserFileSystemErrorDomain = @"GMUserFileSystemErrorDomain";
+GM_EXPORT NSString* const kGMUserFileSystemMountPathKey = @"mountPath";
+GM_EXPORT NSString* const kGMUserFileSystemErrorKey = @"error";
+GM_EXPORT NSString* const kGMUserFileSystemMountFailed = @"kGMUserFileSystemMountFailed";
+GM_EXPORT NSString* const kGMUserFileSystemDidMount = @"kGMUserFileSystemDidMount";
+GM_EXPORT NSString* const kGMUserFileSystemDidUnmount = @"kGMUserFileSystemDidUnmount";
 
 // Attribute keys
-EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
-EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
-EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
-EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
+GM_EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFileFlagsKey";
+GM_EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
+GM_EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
 
 // TODO: Remove comment on EXPORT if/when setvolname is supported.
-/* EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
-/* EXPORT */ NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
+/* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
+/* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
 
 // FinderInfo and ResourceFork keys
-EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
-EXPORT NSString* const kGMUserFileSystemFinderExtendedFlagsKey = @"kGMUserFileSystemFinderExtendedFlagsKey";
-EXPORT NSString* const kGMUserFileSystemCustomIconDataKey = @"kGMUserFileSystemCustomIconDataKey";
-EXPORT NSString* const kGMUserFileSystemWeblocURLKey = @"kGMUserFileSystemWeblocURLKey";
+GM_EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
+GM_EXPORT NSString* const kGMUserFileSystemFinderExtendedFlagsKey = @"kGMUserFileSystemFinderExtendedFlagsKey";
+GM_EXPORT NSString* const kGMUserFileSystemCustomIconDataKey = @"kGMUserFileSystemCustomIconDataKey";
+GM_EXPORT NSString* const kGMUserFileSystemWeblocURLKey = @"kGMUserFileSystemWeblocURLKey";
 
 // Used for time conversions to/from tv_nsec.
 static const double kNanoSecondsPerSecond = 1000000000.0;
@@ -125,6 +125,7 @@ typedef enum {
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
 - (void)setDelegate:(id)delegate;
 @end
+
 @implementation GMUserFileSystemInternal
 
 - (id)init {
@@ -1389,7 +1390,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
                        error:&error]) {
       ret = 0;
       if (object != nil) {
-        fi->fh = (uint64_t)(int)[object retain];
+        fi->fh = (uintptr_t)[object retain];
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1415,7 +1416,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
                      error:&error]) {
       ret = 0;
       if (object != nil) {
-        fi->fh = (uint64_t)(int)[object retain];
+        fi->fh = (uintptr_t)[object retain];
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1430,7 +1431,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
 static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   @try {
-    id object = (id)(int)fi->fh;
+    id object = (id)(uintptr_t)fi->fh;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     [fs releaseFileAtPath:[NSString stringWithUTF8String:path] fileDelegate:object];
     if (object) {
@@ -1451,7 +1452,7 @@ static int fusefm_ftruncate(const char* path, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs truncateFileAtPath:[NSString stringWithUTF8String:path]
-                  fileDelegate:(fi ? (id)(int)fi->fh : nil)
+                  fileDelegate:(fi ? (id)(uintptr_t)fi->fh : nil)
                         offset:offset
                          error:&error]) {
       ret = 0;
@@ -1558,7 +1559,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
-                 fileDelegate:(id)(int)fi->fh
+                 fileDelegate:(id)(uintptr_t)fi->fh
                        buffer:buf
                          size:size
                        offset:offset
@@ -1579,7 +1580,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
-                fileDelegate:(id)(int)fi->fh
+                fileDelegate:(id)(uintptr_t)fi->fh
                       buffer:buf
                         size:size
                       offset:offset
