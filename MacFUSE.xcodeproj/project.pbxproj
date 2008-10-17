@@ -19,6 +19,7 @@
 		28D525C00EA8076400B7CF7B /* GMUserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */; };
 		28D525C10EA8076400B7CF7B /* GMDataBackedFileDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */; };
 		28D525C30EA8076400B7CF7B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
+		28D526C80EA8342500B7CF7B /* macfuse_objc_dtrace.d in Sources */ = {isa = PBXBuildFile; fileRef = 28D526C70EA8342500B7CF7B /* macfuse_objc_dtrace.d */; };
 		8DC2EF530486A6940098B216 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C1666FE841158C02AAC07 /* InfoPlist.strings */; };
 		FF43374C0D27697A00554C02 /* GMAppleDouble.h in Headers */ = {isa = PBXBuildFile; fileRef = FF4337460D27697A00554C02 /* GMAppleDouble.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FF43374D0D27697A00554C02 /* GMAppleDouble.m in Sources */ = {isa = PBXBuildFile; fileRef = FF4337470D27697A00554C02 /* GMAppleDouble.m */; };
@@ -38,6 +39,8 @@
 		089C1667FE841158C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		28D525C80EA8076400B7CF7B /* MacFUSE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MacFUSE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		28D5261B0EA80E7000B7CF7B /* MacFUSE.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = MacFUSE.xcconfig; sourceTree = "<group>"; };
+		28D526C40EA833F100B7CF7B /* GMDTrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMDTrace.h; sourceTree = "<group>"; };
+		28D526C70EA8342500B7CF7B /* macfuse_objc_dtrace.d */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.dtrace; path = macfuse_objc_dtrace.d; sourceTree = "<group>"; };
 		32DBCF5E0370ADEE00C91783 /* MacFUSE_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacFUSE_Prefix.pch; sourceTree = "<group>"; };
 		8DC2EF5A0486A6940098B216 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8DC2EF5B0486A6940098B216 /* MacFUSE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MacFUSE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,6 +151,8 @@
 		32C88DFF0371C24200C91783 /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				28D526C70EA8342500B7CF7B /* macfuse_objc_dtrace.d */,
+				28D526C40EA833F100B7CF7B /* GMDTrace.h */,
 				32DBCF5E0370ADEE00C91783 /* MacFUSE_Prefix.pch */,
 			);
 			name = "Other Sources";
@@ -302,6 +307,7 @@
 				28D525BF0EA8076400B7CF7B /* GMResourceFork.m in Sources */,
 				28D525C00EA8076400B7CF7B /* GMUserFileSystem.m in Sources */,
 				28D525C10EA8076400B7CF7B /* GMDataBackedFileDelegate.m in Sources */,
+				28D526C80EA8342500B7CF7B /* macfuse_objc_dtrace.d in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
