@@ -58,13 +58,7 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
-#include <AvailabilityMacros.h>
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
-// Leopard+
-#else
-// Tiger-
-#endif
+#import "GMDTrace.h"
 
 #define GM_EXPORT __attribute__((visibility("default")))
 
@@ -999,6 +993,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
   NSArray* contents = nil;
+  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
+  }
   if ([[internal_ delegate] respondsToSelector:@selector(contentsOfDirectoryAtPath:error:)]) {
     contents = [[internal_ delegate] contentsOfDirectoryAtPath:path error:error];
   } else if ([path isEqualToString:@"/"]) {
@@ -1039,6 +1036,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
                                    error:(NSError **)error {
+  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
+  }
   // Set up default item attributes.
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
   BOOL isReadOnly = [internal_ isReadOnly];
