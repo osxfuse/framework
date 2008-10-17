@@ -58,6 +58,14 @@
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"
 
+#include <AvailabilityMacros.h>
+
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
+// Leopard+
+#else
+// Tiger-
+#endif
+
 #define GM_EXPORT __attribute__((visibility("default")))
 
 // Notifications
