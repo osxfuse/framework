@@ -30,6 +30,8 @@
 		FF6C40220D300D7E00E51DD2 /* GMDataBackedFileDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */; };
 		FF6C40230D300D7E00E51DD2 /* GMDataBackedFileDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */; };
 		FF999D040D25A4CE00920D03 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
+		FF9CE9410EAC59C80006A9F1 /* MacFUSE.h in Headers */ = {isa = PBXBuildFile; fileRef = FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FF9CE9420EAC59C80006A9F1 /* MacFUSE.h in Headers */ = {isa = PBXBuildFile; fileRef = FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FFC1BF7B0D2D81D5009D8847 /* GMUserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */; };
 /* End PBXBuildFile section */
@@ -52,6 +54,7 @@
 		FF43374B0D27697A00554C02 /* GMResourceFork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMResourceFork.m; sourceTree = "<group>"; };
 		FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMDataBackedFileDelegate.h; sourceTree = "<group>"; };
 		FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMDataBackedFileDelegate.m; sourceTree = "<group>"; };
+		FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacFUSE.h; sourceTree = "<group>"; };
 		FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMUserFileSystem.h; sourceTree = "<group>"; };
 		FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMUserFileSystem.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -119,6 +122,7 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */,
 				FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */,
 				FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */,
 				FF4337460D27697A00554C02 /* GMAppleDouble.h */,
@@ -170,6 +174,7 @@
 				28D525B70EA8076400B7CF7B /* GMResourceFork.h in Headers */,
 				28D525B80EA8076400B7CF7B /* GMUserFileSystem.h in Headers */,
 				28D525B90EA8076400B7CF7B /* GMDataBackedFileDelegate.h in Headers */,
+				FF9CE9410EAC59C80006A9F1 /* MacFUSE.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -182,6 +187,7 @@
 				FF4337500D27697A00554C02 /* GMResourceFork.h in Headers */,
 				FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */,
 				FF6C40220D300D7E00E51DD2 /* GMDataBackedFileDelegate.h in Headers */,
+				FF9CE9420EAC59C80006A9F1 /* MacFUSE.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
