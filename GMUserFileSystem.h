@@ -129,10 +129,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                 offset:(off_t)offset
                  error:(NSError **)error;
 
-// BSD-equivalent: ftruncate(2)
-- (BOOL)truncateToOffset:(off_t)offset 
-                   error:(NSError **)error;
-
 @end
 
 #pragma mark GMUserFileSystem Delegate Protocols
@@ -206,6 +202,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                                           error:(NSError **)error;
 
 // The following keys may be present (you must ignore unknown keys):
+//   NSFileSize
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
 //   NSFileModificationDate
@@ -213,9 +210,10 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFileCreationDate                  (if supports extended dates)
 //   kGMUserFileSystemFileBackupDateKey  (if supports extended dates)
 //   kGMUserFileSystemFileChangeDateKey
+//   kGMUserFileSystemFileAccessDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //   
-// BSD-equivalent: chown(2), chmod(2), utimes(2), chflags(2)
+// BSD-equivalent: truncate(2), chown(2), chmod(2), utimes(2), chflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error;
@@ -256,14 +254,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error;
-
-// This is only called if the fileDelegate is nil or does not implement the 
-// truncateToOffset:error: method.
-//
-// BSD-equivalent: truncate(2)
-- (BOOL)truncateFileAtPath:(NSString *)path 
-                    offset:(off_t)offset 
-                     error:(NSError **)error;
 
 // Called to atomically exchange file data between path1 and path2.
 //
@@ -391,6 +381,9 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 // For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
 extern NSString* const kGMUserFileSystemFileFlagsKey;
+
+// For st_atimespec (see man 2 stat). Last file access time.
+extern NSString* const kGMUserFileSystemFileAccessDateKey;
 
 // For st_ctimespec (see man 2 stat). Last file status change time.
 extern NSString* const kGMUserFileSystemFileChangeDateKey;
