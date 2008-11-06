@@ -155,7 +155,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //
 // - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
 //                                  error:(NSError **)error;
-// - (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
+// - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
+//                             fileDelegate:(id)fileDelegate
 //                                    error:(NSError **)error;
 // - (NSData *)contentsAtPath:(NSString *)path;
 //
@@ -186,8 +187,9 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
-// BSD-equivalent: stat(2)
-- (NSDictionary *)attributesOfItemAtPath:(NSString *)path 
+// BSD-equivalent: stat(2), fstat(2)
+- (NSDictionary *)attributesOfItemAtPath:(NSString *)path
+                            fileDelegate:(id)fileDelegate
                                    error:(NSError **)error;
 
 // The following keys are currently supported (unknown keys are ignored):
@@ -318,7 +320,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 #pragma mark Extended Attributes
 
 // BSD-equivalent: listxattr(2)
-- (NSArray *)extendedAttributesOfItemAtPath:path 
+- (NSArray *)extendedAttributesOfItemAtPath:path
                                       error:(NSError **)error;
 
 // BSD-equivalent: getxattr(2)
