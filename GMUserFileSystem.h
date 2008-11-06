@@ -216,8 +216,10 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //   
 // BSD-equivalent: truncate(2), chown(2), chmod(2), utimes(2), chflags(2)
+//                 ftruncate(2), fchown(2), fchmod(2), futimes(2), fchflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
+         fileDelegate:(id)fileDelegate
                 error:(NSError **)error;
 
 #pragma mark File Contents

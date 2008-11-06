@@ -204,6 +204,9 @@ typedef enum {
                      error:(NSError **)error;
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
                                    error:(NSError **)error;
+- (BOOL)setAttributes:(NSDictionary *)attributes 
+         fileDelegate:(id)fileDelegate
+                error:(NSError **)error;
 @end
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
@@ -1323,8 +1326,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
   }
   
-  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
-    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:fileDelegate:error:)]) {
+    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path fileDelegate:fileDelegate error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
+    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];    
   }
   *error = [GMUserFileSystem errorWithCode:ENODEV];
   return NO;
