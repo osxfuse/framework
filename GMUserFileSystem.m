@@ -207,6 +207,14 @@ typedef enum {
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          fileDelegate:(id)fileDelegate
                 error:(NSError **)error;
+- (int)readToBuffer:(char *)buffer 
+               size:(size_t)size 
+             offset:(off_t)offset 
+              error:(NSError **)error;
+- (int)writeFromBuffer:(const char *)buffer 
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
 @end
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)

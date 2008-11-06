@@ -108,29 +108,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark -
 
-#pragma mark File Delegate Protocol
-
-// The openFileAtPath: and createFileAtPath: operations have fileDelegate as an
-// out-parameter. Any GMUserFileSystemFileDelegate method that the fileDelegate 
-// implements will be called instead of the corresponding method on the 
-// GMUserFileSystem's delegate.
-
-@interface NSObject (GMUserFileSystemFileDelegate)
-
-// BSD-equivalent: read(2)
-- (int)readToBuffer:(char *)buffer 
-               size:(size_t)size 
-             offset:(off_t)offset 
-              error:(NSError **)error;
-
-// BSD-equivalent: write(2)
-- (int)writeFromBuffer:(const char *)buffer 
-                  size:(size_t)size 
-                offset:(off_t)offset
-                 error:(NSError **)error;
-
-@end
-
 #pragma mark GMUserFileSystem Delegate Protocols
 
 // The GMUserFileSystem's delegate can implement any of the below protocols.
@@ -237,9 +214,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // BSD-equivalent: close(2)
 - (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
 
-// This is only called if the fileDelegate is nil or does not implement the 
-// readToBuffer:size:offset:error: method.
-//
 // BSD-equivalent: pread(2)
 - (int)readFileAtPath:(NSString *)path 
          fileDelegate:(id)fileDelegate
@@ -248,9 +222,6 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                offset:(off_t)offset
                 error:(NSError **)error;
 
-// This is only called if the fileDelegate is nil or does not implement the 
-// writeFromBuffer:size:offset:error: method.
-//
 // BSD-equivalent: pwrite(2)
 - (int)writeFileAtPath:(NSString *)path 
           fileDelegate:(id)fileDelegate 
