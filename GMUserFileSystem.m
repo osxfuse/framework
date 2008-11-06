@@ -278,6 +278,9 @@ typedef enum {
 - (NSData *)resourceDataForAttributes:(NSDictionary *)attributes;
 - (NSData *)appleDoubleContentsAtPath:(NSString *)path;
 
+- (NSDictionary *)defaultAttributesOfItemAtPath:(NSString *)path 
+                                       userData:userData
+                                          error:(NSError **)error;  
 - (BOOL)fillStatBuffer:(struct stat *)stbuf 
                forPath:(NSString *)path
           fileDelegate:(id)fileDelegate
@@ -729,9 +732,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                forPath:(NSString *)path 
               userData:(id)userData
                  error:(NSError **)error {
-  NSDictionary* attributes = [self attributesOfItemAtPath:path 
-                                                 userData:userData
-                                                    error:error];
+  NSDictionary* attributes = [self defaultAttributesOfItemAtPath:path 
+                                                        userData:userData
+                                                           error:error];
   if (!attributes) {
     return NO;
   }
@@ -964,6 +967,16 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark File Contents
 
+// NOTE: Only call this if the delegate does indeed support this method.
+- (NSData *)contentsAtPath:(NSString *)path {
+  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
+  }
+
+  id delegate = [internal_ delegate];
+  return [delegate contentsAtPath:path];
+}
+
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
               userData:(id *)userData 
@@ -975,7 +988,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
   id delegate = [internal_ delegate];
   if ([delegate respondsToSelector:@selector(contentsAtPath:)]) {
-    NSData* data = [delegate contentsAtPath:path];
+    NSData* data = [self contentsAtPath:path];
     if (data != nil) {
       *userData = [GMDataBackedFileDelegate fileDelegateWithData:data];
       return YES;
@@ -1093,7 +1106,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, offset=%lld, size=%d", path, offset, size];
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
-  }  
+  }
 
   if (userData != nil &&
       [userData respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
@@ -1319,7 +1332,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if (![attributes objectForKey:NSFileSize] &&
       ![[attributes objectForKey:NSFileType] isEqualToString:NSFileTypeDirectory] &&
       [delegate respondsToSelector:@selector(contentsAtPath:)]) {
-    NSData* data = [[internal_ delegate] contentsAtPath:path];
+    NSData* data = [self contentsAtPath:path];
     if (data == nil) {
       *error = [GMUserFileSystem errorWithCode:ENOENT];
       return nil;
