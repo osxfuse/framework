@@ -215,6 +215,27 @@ typedef enum {
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error;
+- (BOOL)openFileAtPath:(NSString *)path 
+                  mode:(int)mode
+          fileDelegate:(id *)fileDelegate
+                 error:(NSError **)error;
+- (BOOL)createFileAtPath:(NSString *)path 
+              attributes:(NSDictionary *)attributes
+            fileDelegate:(id *)fileDelegate
+                   error:(NSError **)error;
+- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
+- (int)readFileAtPath:(NSString *)path 
+         fileDelegate:(id)fileDelegate
+               buffer:(char *)buffer 
+                 size:(size_t)size 
+               offset:(off_t)offset
+                error:(NSError **)error;
+- (int)writeFileAtPath:(NSString *)path 
+          fileDelegate:(id)fileDelegate 
+                buffer:(const char *)buffer
+                  size:(size_t)size 
+                offset:(off_t)offset
+                 error:(NSError **)error;
 @end
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
@@ -851,16 +872,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
-            fileDelegate:(id *)fileDelegate
+                userData:(id *)userData
                    error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@ [%@]", path, attributes]; 
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
-  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
+  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:userData:error:)]) {
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
-                                     fileDelegate:fileDelegate error:error];
+                                         userData:userData error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
+    // For backward compatibility with version 1.7 and prior.
+    return [[internal_ delegate] createFileAtPath:path attributes:attributes 
+                                     fileDelegate:userData error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -924,7 +949,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
-          fileDelegate:(id *)fileDelegate 
+              userData:(id *)userData 
                  error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@, mode=0x%x", path, mode];
@@ -935,14 +960,22 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([delegate respondsToSelector:@selector(contentsAtPath:)]) {
     NSData* data = [delegate contentsAtPath:path];
     if (data != nil) {
-      *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+      *userData = [GMDataBackedFileDelegate fileDelegateWithData:data];
       return YES;
+    }
+  } else if ([delegate respondsToSelector:@selector(openFileAtPath:mode:userData:error:)]) {
+    if ([delegate openFileAtPath:path 
+                            mode:mode 
+                        userData:userData 
+                           error:error]) {
+      return YES;  // They handled it.
     }
   } else if ([delegate respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
     if ([delegate openFileAtPath:path 
                             mode:mode 
-                    fileDelegate:fileDelegate 
+                    fileDelegate:userData
                            error:error]) {
+      // For backward compatibility with version 1.7 and prior.
       return YES;  // They handled it.
     }
   }
@@ -965,10 +998,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
     if (data != nil) {
       if ((mode & O_ACCMODE) == O_RDONLY) {
-        *fileDelegate = [GMDataBackedFileDelegate fileDelegateWithData:data];
+        *userData = [GMDataBackedFileDelegate fileDelegateWithData:data];
       } else {
         NSMutableData* mutableData = [NSMutableData dataWithData:data];
-        *fileDelegate = 
+        *userData = 
           [GMMutableDataBackedFileDelegate fileDelegateWithData:mutableData];
       }
       return YES;  // Handled by a synthesized file delegate.
@@ -981,22 +1014,25 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
-- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate {
+- (void)releaseFileAtPath:(NSString *)path userData:(id)userData {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
   }
   
-  if (fileDelegate != nil && 
-      [fileDelegate isKindOfClass:[GMDataBackedFileDelegate class]]) {
-    return;  // Don't report releaseFileAtPath for internal file delegate.
+  if (userData != nil && 
+      [userData isKindOfClass:[GMDataBackedFileDelegate class]]) {
+    return;  // Don't report releaseFileAtPath for internal file.
   }
-  if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
-    [[internal_ delegate] releaseFileAtPath:path fileDelegate:fileDelegate];
+  if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:userData:)]) {
+    [[internal_ delegate] releaseFileAtPath:path userData:userData];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
+    // For backward compatibility with version 1.7 and prior.
+    [[internal_ delegate] releaseFileAtPath:path fileDelegate:userData];
   }
 }
 
 - (int)readFileAtPath:(NSString *)path 
-         fileDelegate:(id)fileDelegate
+             userData:(id)userData
                buffer:(char *)buffer 
                  size:(size_t)size 
                offset:(off_t)offset
@@ -1007,12 +1043,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
-  if (fileDelegate != nil &&
-      [fileDelegate respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
-    return [fileDelegate readToBuffer:buffer size:size offset:offset error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
+  if (userData != nil &&
+      [userData respondsToSelector:@selector(readToBuffer:size:offset:error:)]) {
+    return [userData readToBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:userData:buffer:size:offset:error:)]) {
     return [[internal_ delegate] readFileAtPath:path
-                                   fileDelegate:fileDelegate
+                                       userData:userData
+                                         buffer:buffer
+                                           size:size
+                                         offset:offset
+                                          error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
+    // For backward compatibility with version 1.7 and prior.
+    return [[internal_ delegate] readFileAtPath:path
+                                   fileDelegate:userData
                                          buffer:buffer
                                            size:size
                                          offset:offset
@@ -1023,7 +1067,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (int)writeFileAtPath:(NSString *)path 
-          fileDelegate:(id)fileDelegate 
+              userData:(id)userData
                 buffer:(const char *)buffer
                   size:(size_t)size 
                 offset:(off_t)offset
@@ -1034,12 +1078,20 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }  
 
-  if (fileDelegate != nil &&
-      [fileDelegate respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
-    return [fileDelegate writeFromBuffer:buffer size:size offset:offset error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
+  if (userData != nil &&
+      [userData respondsToSelector:@selector(writeFromBuffer:size:offset:error:)]) {
+    return [userData writeFromBuffer:buffer size:size offset:offset error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:userData:buffer:size:offset:error:)]) {
     return [[internal_ delegate] writeFileAtPath:path
-                                    fileDelegate:fileDelegate
+                                        userData:userData
+                                          buffer:buffer
+                                            size:size
+                                          offset:offset
+                                           error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
+    // For backward compatibility with version 1.7 and prior.
+    return [[internal_ delegate] writeFileAtPath:path
+                                    fileDelegate:userData
                                           buffer:buffer
                                             size:size
                                           offset:offset
@@ -1049,6 +1101,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return -1; 
 }
 
+// For backward compatibility with version 1.7 and prior.
 - (BOOL)truncateFileAtPath:(NSString *)path
               fileDelegate:(id)fileDelegate
                     offset:(off_t)offset 
@@ -1571,7 +1624,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
   
   @try {
     NSError* error = nil;
-    id object = nil;
+    id userData = nil;
     unsigned long perm = mode & ALLPERMS;
     NSDictionary* attribs = 
       [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm] 
@@ -1579,11 +1632,12 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
                   attributes:attribs
-                fileDelegate:&object
+                    userData:&userData
                        error:&error]) {
       ret = 0;
-      if (object != nil) {
-        fi->fh = (uintptr_t)[object retain];
+      if (userData != nil) {
+        [userData retain];
+        fi->fh = (uintptr_t)userData;
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1600,16 +1654,17 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
                       // not necessarily need to implement open?
 
   @try {
-    id object = nil;
+    id userData = nil;
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs openFileAtPath:[NSString stringWithUTF8String:path]
                       mode:fi->flags
-              fileDelegate:&object
+                  userData:&userData
                      error:&error]) {
       ret = 0;
-      if (object != nil) {
-        fi->fh = (uintptr_t)[object retain];
+      if (userData != nil) {
+        [userData retain];
+        fi->fh = (uintptr_t)userData;
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1624,11 +1679,11 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
 static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   @try {
-    id object = (id)(uintptr_t)fi->fh;
+    id userData = (id)(uintptr_t)fi->fh;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] fileDelegate:object];
-    if (object) {
-      [object release]; 
+    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] userData:userData];
+    if (userData) {
+      [userData release]; 
     }
   }
   @catch (id exception) { }
@@ -1651,7 +1706,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
-                 fileDelegate:(id)(uintptr_t)fi->fh
+                     userData:(id)(uintptr_t)fi->fh
                        buffer:buf
                          size:size
                        offset:offset
@@ -1672,7 +1727,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
-                fileDelegate:(id)(uintptr_t)fi->fh
+                    userData:(id)(uintptr_t)fi->fh
                       buffer:buf
                         size:size
                       offset:offset

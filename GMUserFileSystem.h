@@ -214,15 +214,15 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // BSD-equivalent: open(2)
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
-          fileDelegate:(id *)fileDelegate
+              userData:(id *)userData
                  error:(NSError **)error;
 
 // BSD-equivalent: close(2)
-- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
+- (void)releaseFileAtPath:(NSString *)path userData:(id)userData;
 
 // BSD-equivalent: pread(2)
 - (int)readFileAtPath:(NSString *)path 
-         fileDelegate:(id)fileDelegate
+             userData:(id)userData
                buffer:(char *)buffer 
                  size:(size_t)size 
                offset:(off_t)offset
@@ -230,7 +230,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 // BSD-equivalent: pwrite(2)
 - (int)writeFileAtPath:(NSString *)path 
-          fileDelegate:(id)fileDelegate 
+              userData:(id)userData
                 buffer:(const char *)buffer
                   size:(size_t)size 
                 offset:(off_t)offset
@@ -253,7 +253,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // BSD-equivalent: creat(2)
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
-            fileDelegate:(id *)fileDelegate
+                userData:(id *)userData
                    error:(NSError **)error;
 
 #pragma mark Moving an Item
