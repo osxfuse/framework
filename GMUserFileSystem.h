@@ -133,7 +133,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
 //                                  error:(NSError **)error;
 // - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
-//                             fileDelegate:(id)fileDelegate
+//                                 userData:(id)userData
 //                                    error:(NSError **)error;
 // - (NSData *)contentsAtPath:(NSString *)path;
 //
@@ -164,9 +164,12 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
+// If this is the fstat variant and userData was supplied in openFileAtPath: or 
+// createFileAtPath: then it will be passed back in this call.
+//
 // BSD-equivalent: stat(2), fstat(2)
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
-                            fileDelegate:(id)fileDelegate
+                                userData:(id)userData
                                    error:(NSError **)error;
 
 // The following keys are currently supported (unknown keys are ignored):
@@ -191,12 +194,15 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   kGMUserFileSystemFileChangeDateKey
 //   kGMUserFileSystemFileAccessDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
-//   
+//
+// If this is the f-variant and userData was supplied in openFileAtPath: or 
+// createFileAtPath: then it will be passed back in this call.
+//
 // BSD-equivalent: truncate(2), chown(2), chmod(2), utimes(2), chflags(2)
 //                 ftruncate(2), fchown(2), fchmod(2), futimes(2), fchflags(2)
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
-         fileDelegate:(id)fileDelegate
+             userData:(id)userData
                 error:(NSError **)error;
 
 #pragma mark File Contents

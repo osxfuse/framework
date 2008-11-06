@@ -205,7 +205,7 @@ typedef enum {
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
                                    error:(NSError **)error;
 - (BOOL)setAttributes:(NSDictionary *)attributes 
-         fileDelegate:(id)fileDelegate
+         ofItemAtPath:(NSString *)path
                 error:(NSError **)error;
 - (int)readToBuffer:(char *)buffer 
                size:(size_t)size 
@@ -689,10 +689,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)fillStatBuffer:(struct stat *)stbuf 
                forPath:(NSString *)path 
-          fileDelegate:(id)fileDelegate
+              userData:(id)userData
                  error:(NSError **)error {
   NSDictionary* attributes = [self attributesOfItemAtPath:path 
-                                             fileDelegate:fileDelegate
+                                                 userData:userData
                                                     error:error];
   if (!attributes) {
     return NO;
@@ -1138,15 +1138,15 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
-                            fileDelegate:fileDelegate
+                                userData:userData
                                    error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
   }
 
   id delegate = [internal_ delegate];
-  if ([delegate respondsToSelector:@selector(attributesOfItemAtPath:fileDelegate:error:)]) {
-    return [delegate attributesOfItemAtPath:path fileDelegate:fileDelegate error:error];
+  if ([delegate respondsToSelector:@selector(attributesOfItemAtPath:userData:error:)]) {
+    return [delegate attributesOfItemAtPath:path userData:userData error:error];
   } else if ([delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
     return [delegate attributesOfItemAtPath:path error:error];
   }
@@ -1155,7 +1155,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 // Get attributesOfItemAtPath from the delegate with default values.
 - (NSDictionary *)defaultAttributesOfItemAtPath:(NSString *)path 
-                                   fileDelegate:fileDelegate
+                                       userData:userData
                                           error:(NSError **)error {
   // Set up default item attributes.
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
@@ -1180,7 +1180,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   BOOL supportsAttributesSelector = [self supportsAttributesOfItemAtPath];
   if (supportsAttributesSelector) {
     customAttribs = [self attributesOfItemAtPath:path 
-                                    fileDelegate:fileDelegate
+                                        userData:userData
                                            error:error];
   }
   
@@ -1205,7 +1205,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     // Maybe we'll try again to get custom attribs on the real path.
     if (supportsAttributesSelector && (isAppleDouble || isDirectoryIcon)) {
       customAttribs = [self attributesOfItemAtPath:path 
-                                      fileDelegate:fileDelegate
+                                          userData:userData
                                              error:error];
     }
   }
@@ -1262,18 +1262,18 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (NSDictionary *)extendedTimesOfItemAtPath:(NSString *)path
-                               fileDelegate:(id)fileDelegate
+                                   userData:(id)userData
                                       error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
   }
-  
+
   if (![self supportsAttributesOfItemAtPath]) {
     *error = [GMUserFileSystem errorWithCode:ENOSYS];
     return nil;
   }
   return [self attributesOfItemAtPath:path 
-                         fileDelegate:fileDelegate
+                             userData:userData
                                 error:error];
 }
 
@@ -1310,7 +1310,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
-         fileDelegate:(id)fileDelegate
+             userData:(id)userData
                 error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
@@ -1324,7 +1324,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     NSNumber* offsetNumber = [attributes objectForKey:NSFileSize];
     off_t offset = [offsetNumber longLongValue];
     BOOL ret = [self truncateFileAtPath:path 
-                           fileDelegate:fileDelegate 
+                           fileDelegate:userData
                                  offset:offset 
                                   error:error 
                                 handled:&handled];
@@ -1334,8 +1334,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
   }
   
-  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:fileDelegate:error:)]) {
-    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path fileDelegate:fileDelegate error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:userData:error:)]) {
+    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path userData:userData error:error];
   } else if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
     return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];    
   }
@@ -1519,10 +1519,10 @@ static int fusefm_fgetattr(const char *path, struct stat *stbuf,
     memset(stbuf, 0, sizeof(struct stat));
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    id fh = fi ? (id)(uintptr_t)fi->fh : nil;
+    id userData = fi ? (id)(uintptr_t)fi->fh : nil;
     if ([fs fillStatBuffer:stbuf 
                    forPath:[NSString stringWithUTF8String:path]
-               fileDelegate:fh
+                  userData:userData
                      error:&error]) {
       ret = 0;
     } else {
@@ -2019,7 +2019,7 @@ static int fusefm_getxtimes(const char* path, struct timespec* bkuptime,
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSDictionary* attribs = 
       [fs extendedTimesOfItemAtPath:[NSString stringWithUTF8String:path]
-                       fileDelegate:nil  // TODO: Maybe this should support FH?
+                           userData:nil  // TODO: Maybe this should support FH?
                               error:&error];
     if (attribs) {
       ret = 0;
@@ -2119,7 +2119,7 @@ static int fusefm_fsetattr_x(const char* path, struct setattr_x* attrs,
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
              ofItemAtPath:[NSString stringWithUTF8String:path]
-             fileDelegate:(fi ? (id)(uintptr_t)fi->fh : nil)
+                 userData:(fi ? (id)(uintptr_t)fi->fh : nil)
                     error:&error]) {
       ret = 0;
     } else {
