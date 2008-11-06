@@ -180,6 +180,31 @@ typedef enum {
     [delegate_ respondsToSelector:@selector(finderFlagsAtPath:)] ||
     [delegate_ respondsToSelector:@selector(iconDataAtPath:)]    ||
     [delegate_ respondsToSelector:@selector(URLOfWeblocAtPath:)];
+  
+  // Check for deprecated methods.
+  SEL deprecatedMethods[] = {
+    @selector(valueOfExtendedAttribute:ofItemAtPath:error:),
+    @selector(setExtendedAttribute:ofItemAtPath:value:flags:error:),
+    @selector(finderFlagsAtPath:),
+    @selector(iconDataAtPath:),
+    @selector(URLOfWeblocAtPath:),
+    @selector(truncateFileAtPath:offset:error:),
+    @selector(attributesOfItemAtPath:error:),
+    @selector(setAttributes:ofItemAtPath:error:),
+    @selector(openFileAtPath:mode:fileDelegate:error:),
+    @selector(createFileAtPath:attributes:fileDelegate:error:),
+    @selector(releaseFileAtPath:fileDelegate:),
+    @selector(readFileAtPath:fileDelegate:buffer:size:offset:error:),
+    @selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:),
+  };
+  int i;
+  for (i = 0; i < sizeof(deprecatedMethods)/sizeof(deprecatedMethods[0]); ++i) {
+    SEL sel = deprecatedMethods[i];
+    if ([delegate_ respondsToSelector:sel]) {
+      NSLog(@"*** WARNING: GMUserFileSystem delegate implements deprecated "
+            @"selector: %@", NSStringFromSelector(sel));
+    }
+  }
 }
 
 @end
@@ -194,7 +219,7 @@ typedef enum {
 - (BOOL)setExtendedAttribute:(NSString *)name
                 ofItemAtPath:(NSString *)path
                        value:(NSData *)value
-                     flags:(int)flags
+                       flags:(int)flags
                        error:(NSError **)error;
 - (UInt16)finderFlagsAtPath:(NSString *)path;
 - (NSData *)iconDataAtPath:(NSString *)path;
@@ -207,14 +232,6 @@ typedef enum {
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
                 error:(NSError **)error;
-- (int)readToBuffer:(char *)buffer 
-               size:(size_t)size 
-             offset:(off_t)offset 
-              error:(NSError **)error;
-- (int)writeFromBuffer:(const char *)buffer 
-                  size:(size_t)size 
-                offset:(off_t)offset
-                 error:(NSError **)error;
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
           fileDelegate:(id *)fileDelegate
@@ -450,7 +467,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([self isDirectoryIconAtPath:path dirPath:&path]) {
     flags |= kIsInvisible;
   }
-  
+
   id delegate = [internal_ delegate];
   if ([delegate respondsToSelector:@selector(finderAttributesAtPath:error:)]) {
     NSError* error = nil;
@@ -883,7 +900,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
                                          userData:userData error:error];
   } else if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
-    // For backward compatibility with version 1.7 and prior.
+    // NOTE: For backward compatibility with version 1.7 and prior.
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
                                      fileDelegate:userData error:error];
   }
@@ -975,7 +992,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                             mode:mode 
                     fileDelegate:userData
                            error:error]) {
-      // For backward compatibility with version 1.7 and prior.
+      // NOTE: For backward compatibility with version 1.7 and prior.
       return YES;  // They handled it.
     }
   }
@@ -1026,7 +1043,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:userData:)]) {
     [[internal_ delegate] releaseFileAtPath:path userData:userData];
   } else if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
-    // For backward compatibility with version 1.7 and prior.
+    // NOTE: For backward compatibility with version 1.7 and prior.
     [[internal_ delegate] releaseFileAtPath:path fileDelegate:userData];
   }
 }
@@ -1054,7 +1071,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                          offset:offset
                                           error:error];
   } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
-    // For backward compatibility with version 1.7 and prior.
+    // NOTE: For backward compatibility with version 1.7 and prior.
     return [[internal_ delegate] readFileAtPath:path
                                    fileDelegate:userData
                                          buffer:buffer
@@ -1089,7 +1106,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                           offset:offset
                                            error:error];
   } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
-    // For backward compatibility with version 1.7 and prior.
+    // NOTE: For backward compatibility with version 1.7 and prior.
     return [[internal_ delegate] writeFileAtPath:path
                                     fileDelegate:userData
                                           buffer:buffer
@@ -1101,7 +1118,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return -1; 
 }
 
-// For backward compatibility with version 1.7 and prior.
+// NOTE: For backward compatibility with version 1.7 and prior.
 - (BOOL)truncateFileAtPath:(NSString *)path
               fileDelegate:(id)fileDelegate
                     offset:(off_t)offset 
@@ -1371,7 +1388,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
-  // Backward-compatibility support for deprecated truncateFileAtPath delegate method.
+  // NOTE: For backward compatibility with version 1.7 and prior.
   if ([attributes objectForKey:NSFileSize] != nil) {
     BOOL handled = NO;  // Did they have a delegate method that handles truncation?    
     NSNumber* offsetNumber = [attributes objectForKey:NSFileSize];
@@ -1446,8 +1463,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                      position:position 
                                         error:error];
   } else if ([delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
-    // NOTE: Provided for backward compatibility with MacFUSE.framework version
-    // 1.5 and previous. This should be removed at some point.
+    // NOTE: For backward compatibility with version 1.5 and prior.
     xattrSupported = YES;
     data = [delegate valueOfExtendedAttribute:name 
                                  ofItemAtPath:path 
@@ -1502,8 +1518,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                   options:options
                                     error:error]; 
   } else if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
-    // NOTE: Provided for backward compatibility with MacFUSE.framework version
-    // 1.5 and previous. This should be removed at some point.
+    // NOTE: For backward compatibility with version 1.5 and prior.
     return [delegate setExtendedAttribute:name 
                              ofItemAtPath:path 
                                     value:value
