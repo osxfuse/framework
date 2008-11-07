@@ -1046,7 +1046,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (void)releaseFileAtPath:(NSString *)path userData:(id)userData {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
+    NSString* traceinfo =
+      [NSString stringWithFormat:@"%@, userData=%p", path, userData];
+    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
   
   if (userData != nil && 
@@ -1068,8 +1070,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                offset:(off_t)offset
                 error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    NSString* traceinfo = 
-      [NSString stringWithFormat:@"%@, offset=%lld, size=%d", path, offset, size];
+    NSString* traceinfo =
+      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
+       path, userData, offset, size];
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
@@ -1104,7 +1107,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
-      [NSString stringWithFormat:@"%@, offset=%lld, size=%d", path, offset, size];
+      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
+       path, userData, offset, size];
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
@@ -1216,7 +1220,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)supportsAttributesOfItemAtPath {
   id delegate = [internal_ delegate];
-  return [delegate respondsToSelector:@selector(attributesOfItemAtPath:fileDelegate:error:)] ||
+  return [delegate respondsToSelector:@selector(attributesOfItemAtPath:userData:error:)] ||
          [delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)];
 }
 
@@ -1224,7 +1228,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                 userData:userData
                                    error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
+    NSString* traceinfo =
+      [NSString stringWithFormat:@"%@, userData=%p", path, userData];
+    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
   id delegate = [internal_ delegate];
@@ -1347,10 +1353,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (NSDictionary *)extendedTimesOfItemAtPath:(NSString *)path
                                    userData:(id)userData
                                       error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY((char*)[path UTF8String]);
-  }
-
   if (![self supportsAttributesOfItemAtPath]) {
     *error = [GMUserFileSystem errorWithCode:ENOSYS];
     return nil;
@@ -1397,7 +1399,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                 error:(NSError **)error {
   if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
-      [NSString stringWithFormat:@"%@, attributes=%@", path, attributes];
+      [NSString stringWithFormat:@"%@, userData=%p, attributes=%@", 
+       path, userData, attributes];
     MACFUSE_OBJC_DELEGATE_ENTRY((char*)[traceinfo UTF8String]);
   }
 
@@ -1649,7 +1652,7 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EACCES;
-  
+
   @try {
     NSError* error = nil;
     id userData = nil;
