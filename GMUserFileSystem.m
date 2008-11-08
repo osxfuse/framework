@@ -738,6 +738,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if (!attributes) {
     return NO;
   }
+
+  // Inode
+  NSNumber* inode = [attributes objectForKey:NSFileSystemFileNumber];
+  if (inode) {
+    stbuf->st_ino = [inode longLongValue];
+  }
   
   // Permissions (mode)
   NSNumber* perm = [attributes objectForKey:NSFilePosixPermissions];
@@ -782,7 +788,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
   }
 
-  // atime, mtime, ctime: We set them all to mtime if it is provided.
+  // NOTE: We default atime,ctime to mtime if it is provided.
   NSDate* mdate = [attributes objectForKey:NSFileModificationDate];
   if (mdate) {
     const double seconds_dp = [mdate timeIntervalSince1970];
@@ -792,19 +798,39 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
     stbuf->st_mtimespec.tv_sec = t_sec;
     stbuf->st_mtimespec.tv_nsec = t_nsec;
-    stbuf->st_atimespec = stbuf->st_mtimespec;
-    stbuf->st_ctimespec = stbuf->st_mtimespec;
+    stbuf->st_atimespec = stbuf->st_mtimespec;  // Default to mtime
+    stbuf->st_ctimespec = stbuf->st_mtimespec;  // Default to mtime
   }
+  NSDate* adate = [attributes objectForKey:kGMUserFileSystemFileAccessDateKey];
+  if (adate) {
+    const double seconds_dp = [adate timeIntervalSince1970];
+    const time_t t_sec = (time_t) seconds_dp;
+    const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
+    stbuf->st_atimespec.tv_sec = t_sec;
+    stbuf->st_atimespec.tv_nsec = t_nsec;
+  }    
   NSDate* cdate = [attributes objectForKey:kGMUserFileSystemFileChangeDateKey];
   if (cdate) {
     const double seconds_dp = [cdate timeIntervalSince1970];
     const time_t t_sec = (time_t) seconds_dp;
     const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
-    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;    
+    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
     stbuf->st_ctimespec.tv_sec = t_sec;
     stbuf->st_ctimespec.tv_nsec = t_nsec;
   }
-  // TODO: kGMUserFileSystemFileAccessDateKey support.
+
+#if __DARWIN_64_BIT_INO_T
+  NSDate* bdate = [attributes objectForKey:NSFileCreationDate];
+  if (bdate) {
+    const double seconds_dp = [bdate timeIntervalSince1970];
+    const time_t t_sec = (time_t) seconds_dp;
+    const double nanoseconds_dp = ((seconds_dp - t_sec) * kNanoSecondsPerSecond); 
+    const long t_nsec = (nanoseconds_dp > 0 ) ? nanoseconds_dp : 0;
+    stbuf->st_birthtimespec.tv_sec = t_sec;
+    stbuf->st_birthtimespec.tv_nsec = t_nsec;
+  }
+#endif
 
   // Size for regular files.
   // TODO: Revisit size for directories.
@@ -2270,6 +2296,13 @@ static struct fuse_operations fusefm_oper = {
                       userInfo:userInfo];
 }
 
+// The stat field member we use to check for a dead file system.
+#if __DARWIN_64_BIT_INO_T
+#define DEAD_FS_FIELD f_fssubtype
+#else
+#define DEAD_FS_FIELD f_reserved1 
+#endif
+
 - (void)mount:(NSDictionary *)args {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
@@ -2285,7 +2318,7 @@ static struct fuse_operations fusefm_oper = {
   memset(&statfs_buf, 0, sizeof(statfs_buf));
   int rc = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
   if (rc == 0) {
-    if (statfs_buf.f_reserved1 == (short)(-1)) {
+    if (statfs_buf.DEAD_FS_FIELD == (short)(-1)) {
       // We use a special indicator value from MacFUSE in the f_fssubtype field
       // to indicate that the currently mounted filesystem is dead. It probably 
       // crashed and was never unmounted.

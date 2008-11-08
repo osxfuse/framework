@@ -159,9 +159,11 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 //   NSFilePosixPermissions
 //   NSFileOwnerAccountID
 //   NSFileGroupOwnerAccountID
+//   NSFileSystemFileNumber             (64-bit on 10.5+)
 //   NSFileCreationDate                 (if supports extended dates)
 //   kGMUserFileSystemFileBackupDateKey (if supports extended dates)
 //   kGMUserFileSystemFileChangeDateKey
+//   kGMUserFileSystemFileAccessDateKey
 //   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
 //
 // If this is the fstat variant and userData was supplied in openFileAtPath: or 

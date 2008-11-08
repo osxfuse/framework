@@ -487,6 +487,18 @@
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = /Library/Frameworks;
+				OTHER_CFLAGS = (
+					"-D__DARWIN_64_BIT_INO_T=1",
+					"-D__FreeBSD__=10",
+					"-D_FILE_OFFSET_BITS=64",
+					"-std=c99",
+					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
+					"${CUSTOM_CFLAGS}",
+				);
+				OTHER_LDFLAGS = (
+					"-lfuse_ino64",
+					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
+				);
 				PRODUCT_NAME = MacFUSE;
 				SDKROOT = macosx10.5;
 				WRAPPER_EXTENSION = framework;
@@ -507,6 +519,18 @@
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = /Library/Frameworks;
+				OTHER_CFLAGS = (
+					"-D__DARWIN_64_BIT_INO_T=1",
+					"-D__FreeBSD__=10",
+					"-D_FILE_OFFSET_BITS=64",
+					"-std=c99",
+					"-I$(MACFUSE_BUILD_ROOT)/usr/local/include",
+					"${CUSTOM_CFLAGS}",
+				);
+				OTHER_LDFLAGS = (
+					"-lfuse_ino64",
+					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
+				);
 				PRODUCT_NAME = MacFUSE;
 				SDKROOT = macosx10.5;
 				STRIPFLAGS = "";
