@@ -34,6 +34,18 @@
 //  Created by ted on 12/29/07.
 //  Based on FUSEFileSystem originally by alcor.
 //
+
+/*!
+ * @header GMUserFileSystem
+ *
+ * Contains the class and delegate methods used to create a user space file
+ * system. Typical use would be to instantiate a 
+ * @link GMUserFileSystem GMUserFileSystem @/link instance, providing a delegate
+ * that implements the core methods of the file system. The GMUserFileSystem 
+ * object can then be mounted at a specified path and will pass on file system
+ * operations to its delegate until it is unmounted.
+ */
+
 #import <Foundation/Foundation.h>
 
 // See "64-bit Class and Instance Variable Access Control"
@@ -41,69 +53,134 @@
 
 @class GMUserFileSystemInternal;
 
+/*!
+ * @class
+ * @discussion This class controls the life cycle of a user space file system.
+ * The GMUserFileSystem is typically instantiated with a delegate that will 
+ * serve file system operations. The delegate needs to implement some or all of 
+ * the methods in the GMUserFileSystemOperations informal protocol. It may also
+ * implement methods from the GMUserFileSystemLifecycle and 
+ * GMUserFileSystemResourceForks protocols as necessary.<br>
+ * 
+ * After instantiating a GMUserFileSystem with an appropriate delegate, call
+ * mountAtPath:withOptions: to mount the file system. A call to unmount or an
+ * external umount operation will unmount the file system. If the delegate 
+ * implements methods from the GMUserFileSystemLifecycle informal protocol then
+ * these will be called just before mount and unmount. In addition, the 
+ * GMUserFileSystem class will post mount and unmount notifications to the
+ * default notification center. Since the underlying GMUserFileSystem 
+ * implementation is multi-threaded, you should assume that notifications will 
+ * not be posted on the main thread. The object will always be the 
+ * GMUserFileSystem* and the userInfo will always contain at least the 
+ * kGMUserFileSystemMountPathkey.<br>
+ *
+ * The best way to get started with GMUserFileSystem is to look at some example
+ * file systems that use MacFUSE.framework. See the example file systems found
+ * <a href="http://macfuse.googlecode.com/svn/trunk/filesystems-objc/">here</a>.
+ */
 GM_EXPORT @interface GMUserFileSystem : NSObject {
  @private
   GMUserFileSystemInternal* internal_;
 }
 
+/*!
+ * @abstract Initialize the user space file system.
+ * @discussion The file system delegate should implement some or all of the
+ * GMUserFileSystemOperations informal protocol. You should only specify YES
+ * for isThreadSafe if your file system delegate is thread safe with respect to
+ * file system operations. That implies that it implements proper file system
+ * locking so that multiple operations on the same file can be done safely.
+ * @param delegate The file system delegate; implements the file system logic.
+ * @param isThreadSafe Is the file system delegate thread safe?
+ * @result A GMUserFileSystem instance.
+ */
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
 
+/*! 
+ * @abstract Set the file system delegate.
+ * @param delegate The delegate to use from now on for this file system.
+ */
 - (void)setDelegate:(id)delegate;
+
+/*! 
+ * @abstract Get the file system delegate.
+ * @result The file system delegate.
+ */
 - (id)delegate;
 
-// Mount the filesystem at the given path. The set of available options can
-// be found at:  http://code.google.com/p/macfuse/wiki/OPTIONS
-// For example, to turn on debug output add @"debug" to the options NSArray.
-// If the mount fails, a kGMUserFileSystemMountFailed notification will be posted
-// to the default notification center. See Notifications below.
+/*!
+ * @abstract Mount the file system at the given path.
+ * @discussion Mounts the file system at mountPath with the given set of options.
+ * The set of available options can be found on the 
+ * <a href="http://code.google.com/p/macfuse/wiki/OPTIONS">options</a> wiki page.
+ * For example, to turn on debug output add \@"debug" to the options NSArray.
+ * If the mount succeeds, then a kGMUserFileSystemDidMount notification is posted
+ * to the default noification center. If the mount fails, then a 
+ * kGMUserFileSystemMountFailed notification will be posted instead.
+ * @param mountPath The path to mount on, e.g. /Volumes/MyFileSystem
+ * @param options The set of mount time options to use.
+ */
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options;
 
-// Advanced mount call. You can use this to mount from a command-line program
-// as follows:
-//  For an app, use: shouldForeground=YES, detachNewThread=YES
-//  For a daemon: shouldForeground=NO, detachNewThread=NO
-//  For debug output: shouldForeground=YES, detachNewThread=NO
-//  For a daemon+runloop:  shouldForeground=NO, detachNewThread=YES
-//    - NOTE: I've never tried daemon+runloop; maybe it doesn't make sense?
-// If the mount fails, a kGMUserFileSystemMountFailed notification will be posted 
-// to the default notification center. See Notifications below.
+/*!
+ * @abstract Mount the file system at the given path with advanced options.
+ * @discussion Mounts the file system at mountPath with the given set of options.
+ * This is an advanced version of @link mountAtPath:withOptions: mountAtPath:withOptions @/link
+ * You can use this to mount from a command-line program as follows:<ul>
+ *  <li>For an app, use: shouldForeground=YES, detachNewThread=YES
+ *  <li>For a daemon: shouldForeground=NO, detachNewThread=NO
+ *  <li>For debug output: shouldForeground=YES, detachNewThread=NO
+ *  <li>For a daemon+runloop:  shouldForeground=NO, detachNewThread=YES<br>
+ *    - NOTE: I've never tried daemon+runloop; maybe it doesn't make sense</ul>
+ * @param mountPath The path to mount on, e.g. /Volumes/MyFileSystem
+ * @param options The set of mount time options to use.
+ * @param shouldForeground Should the file system thread remain foreground rather 
+ *        than daemonize? (Recommend: YES)
+ * @param detachNewThread Should the file system run in a new thread rather than
+ *        the current one? (Recommend: YES)
+ */
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options
    shouldForeground:(BOOL)shouldForeground     // Recommend: YES
     detachNewThread:(BOOL)detachNewThread;     // Recommend: YES
 
-// Unmount the filesystem.
+/*!
+ * @abstract Unmount the file system.
+ * @discussion Unmounts the file system. The kGMUserFileSystemDidUnmount
+ * notification will be posted.
+ */
 - (void)unmount;
 
 @end
 
 #pragma mark Notifications
 
-// The GMUserFileSystem will post lifecycle notifications to the defaultCenter.
-// Since the underlying GMUserFileSystem implementation is multi-threaded, you 
-// should assume that notifications will not be posted on the main thread. The
-// object will always be the GMUserFileSystem* and the userInfo will always
-// contain at least the following:
-//   kGMUserFileSystemMountPathkey -> NSString* that is the mount path
+/*! @group Notifications */
 
-// Error domain for GMUserFileSystem specific errors.
+/*! @abstract Error domain for GMUserFileSystem specific errors */
 extern NSString* const kGMUserFileSystemErrorDomain;
 
-// Key in notification dictionary for mount path (@"mountPath" for legacy)
+/*! 
+ * @abstract Key in notification dictionary for mount path
+ * @discussion The value will be an NSString that is the mount path.
+ */
 extern NSString* const kGMUserFileSystemMountPathKey;
 
-// Key in notification dictionary for an error (@"error" for legacy reasons)
+/*! @abstract Key in notification dictionary for an error */
 extern NSString* const kGMUserFileSystemErrorKey;
 
-// Notification sent when the mountAtPath operation fails. The userInfo will
-// contain an kGMUserFileSystemErrorKey with an NSError*.
+/*! 
+ * @abstract Notification sent when the mountAtPath operation fails.
+ * @discussion The userInfo will contain an kGMUserFileSystemErrorKey with an 
+ * NSError* that describes the error.
+ */
 extern NSString* const kGMUserFileSystemMountFailed;
 
-// Notification sent after the filesystem is successfully mounted.
+/*! @abstract Notification sent after the filesystem is successfully mounted. */
 extern NSString* const kGMUserFileSystemDidMount;
 
-// Notification sent after the filesystem is successfully unmounted.
+/*! @abstract Notification sent after the filesystem is successfully unmounted. */
 extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark -
@@ -114,94 +191,137 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 // In most cases you can selectively choose which methods of a protocol to 
 // implement.
 
+/*! 
+ * @category
+ * @discussion Optional delegate operations that get called as part of a file 
+ * system's life cycle.
+ */
 @interface NSObject (GMUserFileSystemLifecycle)
 
+/*! @abstract Called just before the mount of the file system occurs. */
 - (void)willMount;
+
+/*! @abstract Called just before an unmount of the file system will occur. */
 - (void)willUnmount;
 
 @end
 
+/*! 
+ * @category
+ * @discussion The core set of file system operations the delegate must implement.
+ * Unless otherwise noted, they typically should behave like the NSFileManager 
+ * equivalent. However, the error codes that they return should correspond to
+ * the BSD-equivalent call and be in the NSPOSIXErrorDomain.<br>
+ *
+ * For a read-only filesystem, you can typically pick-and-choose which methods
+ * to implement.  For example, a minimal read-only filesystem might implement:<ul>
+ *   - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
+ *                                    error:(NSError **)error;<br>
+ *   - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
+ *                                   userData:(id)userData
+ *                                      error:(NSError **)error;<br>
+ *   - (NSData *)contentsAtPath:(NSString *)path;</ul>
+ * For a writeable filesystem, the Finder can be quite picky unless the majority
+ * of these methods are implemented. However, you can safely skip hard-links, 
+ * symbolic links, and extended attributes.
+ */
 @interface NSObject (GMUserFileSystemOperations)
-// These are the core methods that your filesystem needs to implement. Unless
-// otherwise noted, they typically should behave like the NSFileManager 
-// equivalent. However, the error codes that they return should correspond to
-// the BSD-equivalent call and be in the NSPOSIXErrorDomain.
-//
-// For a read-only filesystem, you can typically pick-and-choose which methods
-// to implement.  For example, a minimal read-only filesystem might implement:
-//
-// - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path 
-//                                  error:(NSError **)error;
-// - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
-//                                 userData:(id)userData
-//                                    error:(NSError **)error;
-// - (NSData *)contentsAtPath:(NSString *)path;
-//
-// For a writeable filesystem, the Finder can be quite picky unless the majority
-// of these methods are implemented. However, you can safely skip hard-links, 
-// symbolic links, and extended attributes.
 
 #pragma mark Directory Contents
 
-// BSD-equivalent: readdir(3)
+/*!
+ * @abstract Returns directory contents at the specified path.
+ * @discussion Returns an array of NSString containing the names of files and
+ * sub-directories in the specified directory.
+ * @seealso man readdir(3)
+ * @param path The path to a directory.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result An array of NSString or nil on error.
+ */
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error;
 
 #pragma mark Getting and Setting Attributes
 
-// Returns a dictionary of attributes at the given path. It is required to 
-// return at least the NSFileType attribute. You may omit the NSFileSize
-// attribute if contentsAtPath: is implemented, although this is less efficient.
-// The following keys are currently supported (unknown keys are ignored):
-//   NSFileType [Required]
-//   NSFileSize [Recommended]
-//   NSFileModificationDate
-//   NSFileReferenceCount
-//   NSFilePosixPermissions
-//   NSFileOwnerAccountID
-//   NSFileGroupOwnerAccountID
-//   NSFileSystemFileNumber             (64-bit on 10.5+)
-//   NSFileCreationDate                 (if supports extended dates)
-//   kGMUserFileSystemFileBackupDateKey (if supports extended dates)
-//   kGMUserFileSystemFileChangeDateKey
-//   kGMUserFileSystemFileAccessDateKey
-//   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
-//
-// If this is the fstat variant and userData was supplied in openFileAtPath: or 
-// createFileAtPath: then it will be passed back in this call.
-//
-// BSD-equivalent: stat(2), fstat(2)
+/*!
+ * @abstract Returns attributes at the specified path.
+ * @discussion
+ * Returns a dictionary of attributes at the given path. It is required to 
+ * return at least the NSFileType attribute. You may omit the NSFileSize
+ * attribute if contentsAtPath: is implemented, although this is less efficient.
+ * The following keys are currently supported (unknown keys are ignored):<ul>
+ *   <li>NSFileType [Required]
+ *   <li>NSFileSize [Recommended]
+ *   <li>NSFileModificationDate
+ *   <li>NSFileReferenceCount
+ *   <li>NSFilePosixPermissions
+ *   <li>NSFileOwnerAccountID
+ *   <li>NSFileGroupOwnerAccountID
+ *   <li>NSFileSystemFileNumber             (64-bit on 10.5+)
+ *   <li>NSFileCreationDate                 (if supports extended dates)
+ *   <li>kGMUserFileSystemFileBackupDateKey (if supports extended dates)
+ *   <li>kGMUserFileSystemFileChangeDateKey
+ *   <li>kGMUserFileSystemFileAccessDateKey
+ *   <li>kGMUserFileSystemFileFlagsKey</ul>
+ *
+ * If this is the fstat variant and userData was supplied in openFileAtPath: or 
+ * createFileAtPath: then it will be passed back in this call.
+ *
+ * @seealso man stat(2), fstat(2)
+ * @param path The path to the item.
+ * @param userData The userData corresponding to this open file or nil.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result A dictionary of attributes or nil on error.
+ */
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
                                 userData:(id)userData
                                    error:(NSError **)error;
 
-// The following keys are currently supported (unknown keys are ignored):
-//   NSFileSystemSize
-//   NSFileSystemFreeSize
-//   NSFileSystemNodes
-//   NSFileSystemFreeNodes
-//   kGMUserFileSystemVolumeSupportsExtendedDatesKey [NSNumber boolean]
-//
-// BSD-equivalent: statvfs(3)
+/*!
+ * @abstract Returns file system attributes.
+ * @discussion
+ * Returns a dictionary of attributes for the file system.
+ * The following keys are currently supported (unknown keys are ignored):<ul>
+ *   <li>NSFileSystemSize
+ *   <li>NSFileSystemFreeSize
+ *   <li>NSFileSystemNodes
+ *   <li>NSFileSystemFreeNodes
+ *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey</ul>
+ *
+ * @seealso man statvfs(3)
+ * @param path A path on the file system (it is safe to ignore this).
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result A dictionary of attributes for the file system.
+ */
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
                                           error:(NSError **)error;
 
-// The following keys may be present (you must ignore unknown keys):
-//   NSFileSize
-//   NSFileOwnerAccountID
-//   NSFileGroupOwnerAccountID
-//   NSFileModificationDate
-//   NSFilePosixPermissions
-//   NSFileCreationDate                  (if supports extended dates)
-//   kGMUserFileSystemFileBackupDateKey  (if supports extended dates)
-//   kGMUserFileSystemFileChangeDateKey
-//   kGMUserFileSystemFileAccessDateKey
-//   kGMUserFileSystemFileFlagsKey [NSNumber uint32_t for stat st_flags field]
-//
-// If this is the f-variant and userData was supplied in openFileAtPath: or 
-// createFileAtPath: then it will be passed back in this call.
-//
-// BSD-equivalent: truncate(2), chown(2), chmod(2), utimes(2), chflags(2)
-//                 ftruncate(2), fchown(2), fchmod(2), futimes(2), fchflags(2)
+/*!
+ * @abstract Set attributes at the specified path.
+ * @discussion
+ * Sets the attributes for the item at the specified path. The following keys
+ * may be present (you must ignore unknown keys):<ul>
+ *   <li>NSFileSize
+ *   <li>NSFileOwnerAccountID
+ *   <li>NSFileGroupOwnerAccountID
+ *   <li>NSFilePosixPermissions
+ *   <li>NSFileModificationDate
+ *   <li>NSFileCreationDate                  (if supports extended dates)
+ *   <li>kGMUserFileSystemFileBackupDateKey  (if supports extended dates)
+ *   <li>kGMUserFileSystemFileChangeDateKey
+ *   <li>kGMUserFileSystemFileAccessDateKey
+ *   <li>kGMUserFileSystemFileFlagsKey</ul>
+ *
+ * If this is the f-variant and userData was supplied in openFileAtPath: or 
+ * createFileAtPath: then it will be passed back in this call.
+ *
+ * @seealso man truncate(2), chown(2), chmod(2), utimes(2), chflags(2),
+ *              ftruncate(2), fchown(2), fchmod(2), futimes(2), fchflags(2)
+ * @param attributes The attributes to set.
+ * @param path The path to the item.
+ * @param userData The userData corresponding to this open file or nil.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the attributes are successfully set.
+ */
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
              userData:(id)userData
@@ -209,20 +329,60 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark File Contents
 
-// If contentsAtPath is implemented then you can skip open/release/read.
-// Return nil if the file does not exist at the given path.
+/*!
+ * @abstract Returns directory contents at the specified path.
+ * @discussion Returns the full contents at the given path. Implementation of
+ * this delegate method is recommended only by very simple file systems that are 
+ * not concerned with performance. If contentsAtPath is implemented then you can 
+ * skip open/release/read.
+ * @param path The path to the file.
+ * @result The contents of the file or nil if a file does not exist at path.
+ */
 - (NSData *)contentsAtPath:(NSString *)path;
 
-// BSD-equivalent: open(2)
+/*!
+ * @abstract Opens the file at the given path for read/write.
+ * @discussion This will only be called for existing files. If the file needs
+ * to be created then createFileAtPath: will be called instead.
+ * @seealso man open(2)
+ * @param path The path to the file.
+ * @param mode The open mode for the file (e.g. O_RDWR, etc.)
+ * @param userData Out parameter that can be filled in with arbitrary user data.
+ *        The given userData will be retained and passed back in to delegate
+ *        methods that are acting on this open file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the file was opened successfully.
+ */
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
               userData:(id *)userData
                  error:(NSError **)error;
 
-// BSD-equivalent: close(2)
+/*!
+ * @abstract Called when an opened file is closed.
+ * @discussion If userData was provided in the corresponding openFileAtPath: call
+ * then it will be passed in userData and released after this call completes.
+ * @seealso man close(2)
+ * @param path The path to the file.
+ * @param userData The userData corresponding to this open file or nil.
+ */
 - (void)releaseFileAtPath:(NSString *)path userData:(id)userData;
 
-// BSD-equivalent: pread(2)
+/*!
+ * @abstract Reads data from the open file at the specified path.
+ * @discussion Reads data from the file starting at offset into the provided
+ * buffer and returns the number of bytes read. If userData was provided in the 
+ * corresponding openFileAtPath: or createFileAtPath: call then it will be
+ * passed in.
+ * @seealso man pread(2)
+ * @param path The path to the file.
+ * @param userData The userData corresponding to this open file or nil.
+ * @param buffer Byte buffer to read data from the file into.
+ * @param size The size of the provided buffer.
+ * @param offset The offset in the file from which to read data.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result The number of bytes read or -1 on error.
+ */
 - (int)readFileAtPath:(NSString *)path 
              userData:(id)userData
                buffer:(char *)buffer 
@@ -230,7 +390,21 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                offset:(off_t)offset
                 error:(NSError **)error;
 
-// BSD-equivalent: pwrite(2)
+/*!
+ * @abstract Writes data to the open file at the specified path.
+ * @discussion Writes data to the file starting at offset from the provided
+ * buffer and returns the number of bytes written. If userData was provided in
+ * the corresponding openFileAtPath: or createFileAtPath: call then it will be
+ * passed in.
+ * @seealso man pwrite(2)
+ * @param path The path to the file.
+ * @param userData The userData corresponding to this open file or nil.
+ * @param buffer Byte buffer containing the data to write to the file.
+ * @param size The size of the provided buffer.
+ * @param offset The offset in the file to write data.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result The number of bytes written or -1 on error.
+ */
 - (int)writeFileAtPath:(NSString *)path 
               userData:(id)userData
                 buffer:(const char *)buffer
@@ -238,21 +412,47 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                 offset:(off_t)offset
                  error:(NSError **)error;
 
-// Called to atomically exchange file data between path1 and path2.
-//
-// BSD-equivalent: exchangedata(2)
+/*!
+ * @abstract Atomically exchanges data between files.
+ * @discussion  Called to atomically exchange file data between path1 and path2.
+ * @seealso man exchangedata(2)
+ * @param path1 The path to the file.
+ * @param path2 The path to the other file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if data was exchanged successfully.
+ */
 - (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
                   withItemAtPath:(NSString *)path2
                            error:(NSError **)error;
 
 #pragma mark Creating an Item
 
-// BSD-equivalent: mkdir(2)
+/*!
+ * @abstract Creates a directory at the specified path.
+ * @discussion  The attributes may contain keys similar to setAttributes:.
+ * @seealso man mkdir(2)
+ * @param path The directory path to create.
+ * @param attributes Set of attributes to apply to the newly created directory.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the directory was successfully created.
+ */
 - (BOOL)createDirectoryAtPath:(NSString *)path 
                    attributes:(NSDictionary *)attributes
                         error:(NSError **)error;
 
-// BSD-equivalent: creat(2)
+/*!
+ * @abstract Creates and opens a file at the specified path.
+ * @discussion  This should create and open the file at the same time. The 
+ * attributes may contain keys similar to setAttributes:.
+ * @seealso man creat(2)
+ * @param path The path of the file to create.
+ * @param attributes Set of attributes to apply to the newly created file.
+ * @param userData Out parameter that can be filled in with arbitrary user data.
+ *        The given userData will be retained and passed back in to delegate
+ *        methods that are acting on this open file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the directory was successfully created.
+ */
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
                 userData:(id *)userData
@@ -260,57 +460,124 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark Moving an Item
 
-// BSD-equivalent: rename(2)
+/*!
+ * @abstract Moves or renames an item.
+ * @discussion Move, also known as rename, is one of the more difficult file
+ * system methods to implement properly. Care should be taken to handle all 
+ * error conditions and return proper POSIX error codes.
+ * @seealso man rename(2)
+ * @param source The source file or directory.
+ * @param destination The destination file or directory.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the move was successful.
+ */
 - (BOOL)moveItemAtPath:(NSString *)source 
                 toPath:(NSString *)destination
                  error:(NSError **)error;
 
 #pragma mark Removing an Item
 
-// Remove the directory at the given path. This should not recursively remove
-// subdirectories. If not implemented, then removeItemAtPath will be called.
-// 
-// BSD-equivalent: rmdir(2)
+/*!
+ * @abstract Remove the directory at the given path.
+ * @discussion Unlike NSFileManager, this should not recursively remove
+ * subdirectories. If this method is not implemented, then removeItemAtPath 
+ * will be called even for directories.
+ * @seealso man rmdir(2)
+ * @param path The directory to remove.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the directory was successfully removed.
+ */
 - (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error;
 
-// Remove the item at the given path. This should not recursively remove
-// subdirectories. If removeDirectoryAtPath is implemented, then that will
-// be called instead of this selector if the item is a directory.
-//
-// BSD-equivalent: rmdir(2), unlink(2)
+/*!
+ * @abstract Removes the item at the given path.
+ * @discussion This should not recursively remove subdirectories. If 
+ * removeDirectoryAtPath is implemented, then that will be called instead of
+ * this selector if the item is a directory.
+ * @seealso man unlink(2), rmdir(2)
+ * @param path The path to the item to remove.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the item was successfully removed.
+ */
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error;
 
 #pragma mark Linking an Item
 
-// BSD-equivalent: link(2)
+/*!
+ * @abstract Creates a hard link.
+ * @seealso man link(2)
+ * @param path The path for the created hard link.
+ * @param otherPath The path that is the target of the created hard link.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the hard link was successfully created.
+ */
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
                  error:(NSError **)error;
 
 #pragma mark Symbolic Links
 
-// BSD-equivalent: symlink(2)
+/*!
+ * @abstract Creates a symbolic link.
+ * @seealso man symlink(2)
+ * @param path The path for the created symbolic link.
+ * @param otherPath The path that is the target of the symbolic link.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the symbolic link was successfully created.
+ */
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
                            error:(NSError **)error;
 
-// BSD-equivalent: readlink(2)
+/*!
+ * @abstract Reads the destination of a symbolic link.
+ * @seealso man readlink(2)
+ * @param path The path to the specified symlink.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result The destination path of the symbolic link or nil on error.
+ */
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
                                         error:(NSError **)error;
 
 #pragma mark Extended Attributes
 
-// BSD-equivalent: listxattr(2)
+/*!
+ * @abstract Returns the names of the extended attributes at the specified path.
+ * @discussion If there are no extended attributes at this path, then return an
+ * empty array. Return nil only on error.
+ * @seealso man listxattr(2)
+ * @param path The path to the specified file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result An NSArray of extended attribute names or nil on error.
+ */
 - (NSArray *)extendedAttributesOfItemAtPath:path
                                       error:(NSError **)error;
 
-// BSD-equivalent: getxattr(2)
+/*!
+ * @abstract Returns the contents of the extended attribute at the specified path.
+ * @seealso man getxattr(2)
+ * @param name The name of the extended attribute.
+ * @param path The path to the specified file.
+ * @param position The offset within the attribute to read from.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result The data corresponding to the attribute or nil on error.
+ */
 - (NSData *)valueOfExtendedAttribute:(NSString *)name
                         ofItemAtPath:(NSString *)path
                             position:(off_t)position
                                error:(NSError **)error;
 
-// BSD-equivalent: setxattr(2)
+/*!
+ * @abstract Writes the contents of the extended attribute at the specified path.
+ * @seealso man setxattr(2)
+ * @param name The name of the extended attribute.
+ * @param path The path to the specified file.
+ * @param value The data to write.
+ * @param position The offset within the attribute to write to
+ * @param options Options (see setxattr man page).
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the attribute was successfully written.
+ */
 - (BOOL)setExtendedAttribute:(NSString *)name
                 ofItemAtPath:(NSString *)path
                        value:(NSData *)value
@@ -318,43 +585,67 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                      options:(int)options
                        error:(NSError **)error;
 
-// BSD-equivalent: removexattr(2)
+/*!
+ * @abstract Removes the extended attribute at the specified path.
+ * @seealso man removexattr(2)
+ * @param name The name of the extended attribute.
+ * @param path The path to the specified file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the attribute was successfully removed.
+ */
 - (BOOL)removeExtendedAttribute:(NSString *)name
                    ofItemAtPath:(NSString *)path
                           error:(NSError **)error;
 
 @end
 
-@interface NSObject (GMUserFileSystemResourceForks)
-// Implementing any GMUserFileSystemResourceForks method turns on automatic 
-// handling of FinderInfo and ResourceForks. In 10.5 and later these are 
-// provided via extended attributes while in 10.4 we use "._" files. Typically,
-// it only makes sense to use these for a read-only file system.
 
-// Returns a dictionary of FinderInfo attributes at the given path. Return nil
-// or a dictionary with no relevant keys if there is no FinderInfo data. If a 
-// custom icon is desired, then use Finder flags with the kHasCustomIcon bit set 
-// (preferred) and/or the kGMUserFileSystemCustonIconDataKey, and don't forget
-// to implement resourceAttributesAtPath:error: below. The following keys 
-// are currently supported (unknown keys are ignored):
-//   NSFileHFSTypeCode
-//   NSFileHFSCreatorCode
-//   kGMUserFileSystemFinderFlagsKey (NSNumber Uint16 Finder flags)
-//   kGMUserFileSystemFinderExtendedFlagsKey (NSNumber Uint16)
-//   kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
-//   TODO: kGMUserFileSystemLabelNumberKey   (NSNumber)
-//
-// BSD-equivalent: getxattr(2)
+/*! 
+ * @category
+ * @discussion Implementing any GMUserFileSystemResourceForks method turns on
+ * automatic handling of FinderInfo and ResourceForks. In 10.5 and later these 
+ * are provided via extended attributes while in 10.4 we use "._" files. 
+ * Typically, it only makes sense to use these for a read-only file system.
+ */
+@interface NSObject (GMUserFileSystemResourceForks)
+
+/*!
+ * @abstract Returns FinderInfo attributes at the specified path.
+ * @discussion Returns a dictionary of FinderInfo attributes at the given path. 
+ * Return nil or a dictionary with no relevant keys if there is no FinderInfo 
+ * data. If a custom icon is desired, then use Finder flags with the 
+ * kHasCustomIcon bit set (preferred) and/or the 
+ * kGMUserFileSystemCustonIconDataKey, and don't forget to implement 
+ * resourceAttributesAtPath:error:.
+ *
+ * The following keys are currently supported (unknown keys are ignored):<ul>
+ *   <li>NSFileHFSTypeCode
+ *   <li>NSFileHFSCreatorCode
+ *   <li>kGMUserFileSystemFinderFlagsKey (NSNumber Uint16 Finder flags)
+ *   <li>kGMUserFileSystemFinderExtendedFlagsKey (NSNumber Uint16)
+ *   <li>kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
+ *   <li>TODO: kGMUserFileSystemLabelNumberKey   (NSNumber)</ul> 
+ * @seealso man getxattr(2)
+ * @param path The path to the item.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result A dictionary of FinderInfo attributes or nil on error.
+ */
 - (NSDictionary *)finderAttributesAtPath:(NSString *)path 
                                    error:(NSError **)error;
 
-// Returns a dictionary of ResourceFork attributes at the given path. Return nil
-// or a dictionary with no relevant keys if there is no resource fork data.
-// The following keys are currently supported (unknown keys are ignored):
-//   kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
-//   kGMUserFileSystemWeblocURLkey [NSURL, only valid for .webloc files]
-//
-// BSD-equivalent: getxattr(2)
+/*!
+ * @abstract Returns ResourceFork attributes at the specified path.
+ * @discussion Return nil or a dictionary with no relevant keys if there is no 
+ * resource fork data.
+ *
+ * The following keys are currently supported (unknown keys are ignored):<ul>
+ *   <li>kGMUserFileSystemCustomIconDataKey [Raw .icns file NSData]
+ *   <li>kGMUserFileSystemWeblocURLkey [NSURL, only valid for .webloc files]</ul>
+ * @seealso man getxattr(2)
+ * @param path The path to the item.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result A dictionary of ResourceFork attributes or nil on error.
+ */
 - (NSDictionary *)resourceAttributesAtPath:(NSString *)path
                                      error:(NSError **)error;
 
@@ -362,36 +653,74 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 #pragma mark Additional Item Attribute Keys
 
-// For st_flags (see man 2 stat). Value is an NSNumber* with uint32 value.
+/*! @group Additional Item Attribute Keys */
+
+/*! 
+ * @abstract File flags.
+ * @discussion The value should be an NSNumber* with uint32 value that is the
+ * file st_flags (man 2 stat). 
+ */
 extern NSString* const kGMUserFileSystemFileFlagsKey;
 
-// For st_atimespec (see man 2 stat). Last file access time.
+/*! 
+ * @abstract File access date.
+ * @discussion The value should be an NSDate that is the last file access 
+ * time. See st_atimespec (man 2 stat). 
+ */
 extern NSString* const kGMUserFileSystemFileAccessDateKey;
 
-// For st_ctimespec (see man 2 stat). Last file status change time.
+/*! 
+ * @abstract File status change date.
+ * @discussion The value should be an NSDate that is the last file status change 
+ * time. See st_ctimespec (man 2 stat). 
+ */
 extern NSString* const kGMUserFileSystemFileChangeDateKey;
 
-// For file backup date.
+/*! 
+ * @abstract  For file backup date. 
+ * @discussion The value should be an NSDate that is the backup date. 
+ */
 extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
 #pragma mark Additional Volume Attribute Keys
 
-// Boolean NSNumber for whether the volume supports extended dates such as
-// creation date and backup date.
+/*! @group Additional Volume Attribute Keys */
+
+/*! 
+ * @abstract Specifies support for extended dates.
+ * @discussion The value should be a boolean NSNumber that indicates whether or 
+ * not the file system supports extended dates such as creation and backup dates.
+ */
 extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
-// For FinderInfo flags (i.e. kHasCustomIcon). See CarbonCore/Finder.h.
+/*! @group Additional Finder and Resource Fork Keys */
+
+/*! 
+ * @abstract FinderInfo flags.
+ * @discussion The value should contain an NSNumber created by OR'ing together
+ * Finder flags (e.g. kHasCustomIcon). See CarbonCore/Finder.h. 
+ */
 extern NSString* const kGMUserFileSystemFinderFlagsKey;
 
-// For FinderInfo extended flags (i.e. kExtendedFlagHasCustomBadge).
+/*!
+ * @abstract FinderInfo extended flags.
+ * @discussion The value should contain an NSNumber created by OR'ing together
+ * extended Finder flags. See CarbonCore/Finder.h.
+ */
 extern NSString* const kGMUserFileSystemFinderExtendedFlagsKey;
 
-// For ResourceFork custom icon. NSData for raw .icns file.
+/*! 
+ * @abstract ResourceFork custom icon. 
+ * @discussion The value should be NSData for a raw .icns file. 
+ */
 extern NSString* const kGMUserFileSystemCustomIconDataKey;
 
-// For ResourceFork webloc NSURL.
+/*! 
+ * @abstract ResourceFork webloc.
+ * @discussion The value should be an NSURL that is the webloc.
+ */
 extern NSString* const kGMUserFileSystemWeblocURLKey;
 
 #undef GM_EXPORT
