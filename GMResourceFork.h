@@ -34,30 +34,69 @@
 //
 //  Created by ted on 12/29/07.
 //
+
+/*!
+ * @header GMResourceFork
+ *
+ * A utility class to construct raw resource fork data.
+ * 
+ * In OS 10.4, the ResourceFork for a file may be present in an AppleDouble (._) 
+ * file that is associated with the file. In 10.5+, the ResourceFork is present 
+ * in the com.apple.ResourceFork extended attribute on a file.
+ */
+
 #import <Foundation/Foundation.h>
 
 #define GM_EXPORT __attribute__((visibility("default")))
 
 @class GMResource;
 
+/*!
+ * @class
+ * @discussion This class can be used to construct raw NSData for a resource 
+ * fork. For more information about resource forks, see the CarbonCore/Finder.h 
+ * header file.
+ */
 GM_EXPORT @interface GMResourceFork : NSObject {
  @private
   NSMutableDictionary* resourcesByType_;
 }
+
+/*! @abstract Returns an autoreleased GMResourceFork */
 + (GMResourceFork *)resourceFork;
 
+/*! 
+ * @abstract Adds a resource to the resource fork by specifying components.
+ * @discussion See CarbonCore/Finder.h for some common resource identifiers.
+ * @param resType The four-char code for the resource, e.g. 'icns'
+ * @param resID The ID of the resource, e.g. 256 for webloc 'url' contents
+ * @param name The name of the resource; may be nil (retained)
+ * @param data The raw data for the resource (retained)
+ */
 - (void)addResourceWithType:(ResType)resType
                       resID:(ResID)resID
                        name:(NSString *)name
                        data:(NSData *)data;
 
+/*! 
+ * @abstract Adds a resource to the resource fork.
+ * @discussion See CarbonCore/Finder.h for some common resource identifiers.
+ * @param resource The resource to add.
+ */
 - (void)addResource:(GMResource *)resource;
 
-// Constructs the raw data for the resource fork containing all added resources.
+/*! 
+ * @abstract Constucts the raw data for the resource fork.
+ * @result NSData for the resource fork containing all added resources.
+ */
 - (NSData *)data;
 
 @end
 
+/*!
+ * @class
+ * @discussion This class represents a single resource in a resource fork.
+ */
 GM_EXPORT @interface GMResource : NSObject {
  @private
   ResType resType_;  // FourCharCode, i.e. 'icns'
@@ -65,19 +104,43 @@ GM_EXPORT @interface GMResource : NSObject {
   NSString* name_;  // Retained: The name of the resource.
   NSData* data_;  // Retained: The raw data for the resource.
 }
+
+/*! 
+ * @abstract Returns an autoreleased resource by specifying components.
+ * @discussion See CarbonCore/Finder.h for some common resource identifiers.
+ * @param resType The four-char code for the resource, e.g. 'icns'
+ * @param resID The ID of the resource, e.g. 256 for webloc 'url' contents
+ * @param name The name of the resource; may be nil (retained)
+ * @param data The raw data for the resource (retained)
+ */
 + (GMResource *)resourceWithType:(ResType)resType
                            resID:(ResID)resID
                             name:(NSString *)name  // May be nil
                             data:(NSData *)data;
 
+/*! 
+ * @abstract Initializes a resource by specifying components.
+ * @discussion See CarbonCore/Finder.h for some common resource identifiers.
+ * @param resType The four-char code for the resource, e.g. 'icns'
+ * @param resID The ID of the resource, e.g. 256 for webloc 'url' contents
+ * @param name The name of the resource; may be nil (retained)
+ * @param data The raw data for the resource (retained)
+ */
 - (id)initWithType:(ResType)resType
              resID:(ResID)resID 
               name:(NSString *)name  // May be nil
               data:(NSData *)data;
 
+/*! @abstract The resource ID */
 - (ResID)resID;
+
+/*! @abstract The four-char code resource type */
 - (ResType)resType;
+
+/*! @abstract The resource name or nil if none */
 - (NSString *)name;
+
+/*! @abstract The resource data */
 - (NSData *)data;
 
 @end

@@ -34,10 +34,27 @@
 //
 //  Created by ted on 12/29/07.
 //
+
+/*!
+ * @header GMFinderInfo
+ *
+ * A utility class to construct raw data for FinderInfo. 
+ * 
+ * In OS 10.4, the FinderInfo for a file may be present in an AppleDouble (._) 
+ * file that is associated with the file. In 10.5+, the FinderInfo is present in 
+ * the com.apple.FinderInfo extended attribute on a file.
+ */
+
 #import <Foundation/Foundation.h>
 
 #define GM_EXPORT __attribute__((visibility("default")))
 
+/*!
+ * @class
+ * @discussion This class can be used to construct raw NSData for FinderInfo.
+ * For more information about FinderInfo and what it can contain, see
+ * the CarbonCore/Finder.h header file.
+ */
 GM_EXPORT @interface GMFinderInfo : NSObject {
  @private
   UInt16 flags_;
@@ -46,24 +63,61 @@ GM_EXPORT @interface GMFinderInfo : NSObject {
   OSType creatorCode_;
 }
 
+/*! @abstract Returns an autorleased GMFinderInfo */
 + (GMFinderInfo *)finderInfo;
 
+/*! 
+ * @abstract Sets FinderInfo flags.
+ * @discussion See CarbonCore/Finder.h for the set of flags.
+ * @param flags OR'd set of valid Finder flags.
+ */
 - (void)setFlags:(UInt16)flags;
+
+/*! 
+ * @abstract Sets FinderInfo extended flags.
+ * @discussion See CarbonCore/Finder.h for the set of extended flags.
+ * @param flags OR'd set of valid Finder extended flags.
+ */
 - (void)setExtendedFlags:(UInt16)extendedFlags;
+
+/*! 
+ * @abstract Sets FinderInfo four-char type code.
+ * @param typeCode The four-char type code to set.
+ */
 - (void)setTypeCode:(OSType)typeCode;
+
+/*! 
+ * @abstract Sets FinderInfo four-char creator code.
+ * @param typeCode The four-char creator code to set.
+ */
 - (void)setCreatorCode:(OSType)creatorCode;
 
-// Constructs the raw data for the FinderInfo.
+/*! 
+ * @abstract Constucts the raw data for the FinderInfo.
+ * @result NSData for the FinderInfo based on the current settings.
+ */
 - (NSData *)data;
 
 // -- Deprecated Convenience Methods --
 
-// Create raw data for FinderInfo with the given flags. See header 
-// CoreServices/CarbonCore/Finder.h for what flags can be used.
+/*! 
+ * @abstract NSData for a FinderInfo with the given flags.
+ * @param flags OR'd set of FinderInfo flags.
+ * @result NSData of the FinderInfo.
+ * @deprecated This method is deprecated.
+ */
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags;
 
 // Suitable only for files (not directories), this version allows you to
 // specify type and creator four-char-codes in addition to the flags.
+/*! 
+ * @abstract NSData for a FinderInfo with the given flags, type, and creator.
+ * @param flags OR'd set of FinderInfo flags.
+ * @param typeCode The four-char type code.
+ * @param creatorCode The four-char creator code.
+ * @result NSData of the FinderInfo.
+ * @deprecated This method is deprecated.
+ */
 + (NSData *)finderInfoWithFinderFlags:(UInt16)flags
                              typeCode:(OSType)typeCode
                           creatorCode:(OSType)creatorCode;
