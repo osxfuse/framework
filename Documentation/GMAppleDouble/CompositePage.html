@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/1998/REC-html40-19980424/loose.dtd">
+<html>
+<head>
+<title>GMAppleDouble</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="HeaderDoc">
+<style type="text/css"><!--.keyword {background:#ffffff; color:#761550;}.template {background:#ffffff; color:#761550;}.number {background: #ffffff; color:#0000ff;}.function {background:#ffffff; color:#000000;}.string {background: #ffffff; color:#891315;}.preprocessor {background:#ffffff; color:#236e25}.comment {background:#ffffff; color:#236e25}.char {background: #ffffff; color:#0000ff;}.var {background:#ffffff; color:#000000;}.type {background:#ffffff; color:#761550;}.param {background:#ffffff; color:#000000;}a:link {text-decoration: none; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: small; color: #0000ff;}a:visited {text-decoration: none; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: small; color: #0000ff;}a:visited:hover {text-decoration: underline; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: small; color: #ff6600;}a:active {text-decoration: none; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: small; color: #ff6600;}a:hover {text-decoration: underline; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: small; color: #ff6600;}h4 {text-decoration: none; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: tiny; font-weight: bold;}body {text-decoration: none; font-family: lucida grande, geneva, helvetica, arial, sans-serif; font-size: 10pt;}--></style>
+</head>
+<body bgcolor="#ffffff">
+<a name="top"></a><a name="//apple_ref/doc/header/GMAppleDouble.h" title="GMAppleDouble"></a><hr>
+<table border="0" cellpadding="2" cellspacing="2" width="300"><tr><td valign="top" height="12" colspan="5">
+<h1><a name="GMAppleDouble">GMAppleDouble</a></h1>
+</td></tr></table>
+<hr>
+<p></p>
+<h5 class="tight">
+<font face="Lucida Grande,Helvetica,Arial">Discussion</font>
+</h5>
+<p><!-- begin discussion -->
+A utility class to construct an AppleDouble (._) file.
+
+AppleDouble files contain information about a corresponding file and are 
+typically used on file systems that do not support extended attributes.<!-- end discussion --></p>
+<p></p>
+<hr>
+<br><h2>Classes</h2>
+<a name="HeaderDoc_classes"></a><dl>
+<dt><tt><a href="Classes/GMAppleDoubleEntry_/index.html#//apple_ref/occ/cl/GMAppleDoubleEntry" target="_top">GMAppleDoubleEntry </a></tt></dt>
+<dd></dd>
+<dt><tt><a href="Classes/GMAppleDouble_/index.html#//apple_ref/occ/cl/GMAppleDouble" target="_top">GMAppleDouble </a></tt></dt>
+<dd></dd>
+</dl>
+<hr>
+<br><h2>Typedefs</h2>
+<hr>
+<!-- headerDoc=tdef;  uid=//apple_ref/doc/compositePage/c/tdef/GMAppleDoubleEntryID;  name=GMAppleDoubleEntryID --><a name="//apple_ref/doc/compositePage/c/tdef/GMAppleDoubleEntryID"></a><table border="0" cellpadding="2" cellspacing="2" width="300"><tr><td valign="top" height="12" colspan="5">
+<h3><a name="GMAppleDoubleEntryID">GMAppleDoubleEntryID </a></h3>
+</td></tr></table>
+<hr>
+<p></p>
+<pre><span class="keyword">typedef</span> <span class="keyword">enum</span> { 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryInvalid //apple_ref/c/tdef/DoubleEntryInvalid //apple_ref/c/tag/DoubleEntryInvalid //apple_ref/c/econst/DoubleEntryInvalid //apple_ref/c/struct/DoubleEntryInvalid //apple_ref/c/clconst/DoubleEntryInvalid //apple_ref/c/intf/DoubleEntryInvalid" --><span class="type">DoubleEntryInvalid</span><!-- /a --> = <span class="number">0</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryDataFork //apple_ref/c/tdef/DoubleEntryDataFork //apple_ref/c/tag/DoubleEntryDataFork //apple_ref/c/econst/DoubleEntryDataFork //apple_ref/c/struct/DoubleEntryDataFork //apple_ref/c/clconst/DoubleEntryDataFork //apple_ref/c/intf/DoubleEntryDataFork" --><span class="type">DoubleEntryDataFork</span><!-- /a --> = <span class="number">1</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryResourceFork //apple_ref/c/tdef/DoubleEntryResourceFork //apple_ref/c/tag/DoubleEntryResourceFork //apple_ref/c/econst/DoubleEntryResourceFork //apple_ref/c/struct/DoubleEntryResourceFork //apple_ref/c/clconst/DoubleEntryResourceFork //apple_ref/c/intf/DoubleEntryResourceFork" --><span class="type">DoubleEntryResourceFork</span><!-- /a --> = <span class="number">2</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryRealName //apple_ref/c/tdef/DoubleEntryRealName //apple_ref/c/tag/DoubleEntryRealName //apple_ref/c/econst/DoubleEntryRealName //apple_ref/c/struct/DoubleEntryRealName //apple_ref/c/clconst/DoubleEntryRealName //apple_ref/c/intf/DoubleEntryRealName" --><span class="type">DoubleEntryRealName</span><!-- /a --> = <span class="number">3</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryComment //apple_ref/c/tdef/DoubleEntryComment //apple_ref/c/tag/DoubleEntryComment //apple_ref/c/econst/DoubleEntryComment //apple_ref/c/struct/DoubleEntryComment //apple_ref/c/clconst/DoubleEntryComment //apple_ref/c/intf/DoubleEntryComment" --><span class="type">DoubleEntryComment</span><!-- /a --> = <span class="number">4</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryBlackAndWhiteIcon //apple_ref/c/tdef/DoubleEntryBlackAndWhiteIcon //apple_ref/c/tag/DoubleEntryBlackAndWhiteIcon //apple_ref/c/econst/DoubleEntryBlackAndWhiteIcon //apple_ref/c/struct/DoubleEntryBlackAndWhiteIcon //apple_ref/c/clconst/DoubleEntryBlackAndWhiteIcon //apple_ref/c/intf/DoubleEntryBlackAndWhiteIcon" --><span class="type">DoubleEntryBlackAndWhiteIcon</span><!-- /a --> = <span class="number">5</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryColorIcon //apple_ref/c/tdef/DoubleEntryColorIcon //apple_ref/c/tag/DoubleEntryColorIcon //apple_ref/c/econst/DoubleEntryColorIcon //apple_ref/c/struct/DoubleEntryColorIcon //apple_ref/c/clconst/DoubleEntryColorIcon //apple_ref/c/intf/DoubleEntryColorIcon" --><span class="type">DoubleEntryColorIcon</span><!-- /a --> = <span class="number">6</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryFileDatesInfo //apple_ref/c/tdef/DoubleEntryFileDatesInfo //apple_ref/c/tag/DoubleEntryFileDatesInfo //apple_ref/c/econst/DoubleEntryFileDatesInfo //apple_ref/c/struct/DoubleEntryFileDatesInfo //apple_ref/c/clconst/DoubleEntryFileDatesInfo //apple_ref/c/intf/DoubleEntryFileDatesInfo" --><span class="type">DoubleEntryFileDatesInfo</span><!-- /a --> = <span class="number">8</span>, <span class="comment">// See notes</span> 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryFinderInfo //apple_ref/c/tdef/DoubleEntryFinderInfo //apple_ref/c/tag/DoubleEntryFinderInfo //apple_ref/c/econst/DoubleEntryFinderInfo //apple_ref/c/struct/DoubleEntryFinderInfo //apple_ref/c/clconst/DoubleEntryFinderInfo //apple_ref/c/intf/DoubleEntryFinderInfo" --><span class="type">DoubleEntryFinderInfo</span><!-- /a --> = <span class="number">9</span>, <span class="comment">// See notes</span> 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryMacFileInfo //apple_ref/c/tdef/DoubleEntryMacFileInfo //apple_ref/c/tag/DoubleEntryMacFileInfo //apple_ref/c/econst/DoubleEntryMacFileInfo //apple_ref/c/struct/DoubleEntryMacFileInfo //apple_ref/c/clconst/DoubleEntryMacFileInfo //apple_ref/c/intf/DoubleEntryMacFileInfo" --><span class="type">DoubleEntryMacFileInfo</span><!-- /a --> = <span class="number">10</span>, <span class="comment">// See notes</span> 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryProDosFileInfo //apple_ref/c/tdef/DoubleEntryProDosFileInfo //apple_ref/c/tag/DoubleEntryProDosFileInfo //apple_ref/c/econst/DoubleEntryProDosFileInfo //apple_ref/c/struct/DoubleEntryProDosFileInfo //apple_ref/c/clconst/DoubleEntryProDosFileInfo //apple_ref/c/intf/DoubleEntryProDosFileInfo" --><span class="type">DoubleEntryProDosFileInfo</span><!-- /a --> = <span class="number">11</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryMSDosFileinfo //apple_ref/c/tdef/DoubleEntryMSDosFileinfo //apple_ref/c/tag/DoubleEntryMSDosFileinfo //apple_ref/c/econst/DoubleEntryMSDosFileinfo //apple_ref/c/struct/DoubleEntryMSDosFileinfo //apple_ref/c/clconst/DoubleEntryMSDosFileinfo //apple_ref/c/intf/DoubleEntryMSDosFileinfo" --><span class="type">DoubleEntryMSDosFileinfo</span><!-- /a --> = <span class="number">12</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryShortName //apple_ref/c/tdef/DoubleEntryShortName //apple_ref/c/tag/DoubleEntryShortName //apple_ref/c/econst/DoubleEntryShortName //apple_ref/c/struct/DoubleEntryShortName //apple_ref/c/clconst/DoubleEntryShortName //apple_ref/c/intf/DoubleEntryShortName" --><span class="type">DoubleEntryShortName</span><!-- /a --> = <span class="number">13</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryAFPFileInfo //apple_ref/c/tdef/DoubleEntryAFPFileInfo //apple_ref/c/tag/DoubleEntryAFPFileInfo //apple_ref/c/econst/DoubleEntryAFPFileInfo //apple_ref/c/struct/DoubleEntryAFPFileInfo //apple_ref/c/clconst/DoubleEntryAFPFileInfo //apple_ref/c/intf/DoubleEntryAFPFileInfo" --><span class="type">DoubleEntryAFPFileInfo</span><!-- /a --> = <span class="number">14</span>, 
+    <!-- a logicalPath="//apple_ref/c/cl/DoubleEntryDirectoryID //apple_ref/c/tdef/DoubleEntryDirectoryID //apple_ref/c/tag/DoubleEntryDirectoryID //apple_ref/c/econst/DoubleEntryDirectoryID //apple_ref/c/struct/DoubleEntryDirectoryID //apple_ref/c/clconst/DoubleEntryDirectoryID //apple_ref/c/intf/DoubleEntryDirectoryID" --><span class="type">DoubleEntryDirectoryID</span><!-- /a --> = <span class="number">15</span>, 
+} <span class="var">GMAppleDoubleEntryID</span>;  </pre>
+<h5 class="tight">
+<font face="Lucida Grande,Helvetica,Arial">Discussion</font>
+</h5>
+<p><!-- begin discussion -->* </p>
+<pre>
+ * Based on "AppleSingle/AppleDouble Formats for Foreign Files Developer's Note"
+ *
+ * Notes:
+ * DoubleEntryFileDatesInfo
+ *    File creation, modification, backup, and access times as number of seconds 
+ *    before or after 12:00 AM Jan 1 2000 GMT as SInt32.
+ *  DoubleEntryFinderInfo
+ *    16 bytes of FinderInfo followed by 16 bytes of extended FinderInfo.
+ *    New FinderInfo should be zero'd out. For a directory, when the Finder 
+ *    encounters an entry with the init'd bit cleared, it will initialize the 
+ *    frView field of the to a value indicating how the contents of the
+ *    directory should be shown. Recommend to set frView to value of 256.
+ *  DoubleEntryMacFileInfo
+ *    This is a 32 bit flag that stores locked (bit 0) and protected (bit 1).
+</pre>
+<!-- end discussion --><p></p>
+<p>Last Updated: Wednesday, November 12, 2008
+</p>
+</body>
+</html>
