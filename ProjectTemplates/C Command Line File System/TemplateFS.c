@@ -111,7 +111,7 @@ static int
 
 static int
 ÇPROJECTNAMEASIDENTIFIERÈ_open(const char *path, struct fuse_file_info *fi) {
-  return -ENOSYS;
+  return -ENOENT;
 }
 
 static int
@@ -128,13 +128,8 @@ static int
 
 static int
 ÇPROJECTNAMEASIDENTIFIERÈ_statfs(const char *path, struct statvfs *stbuf) {
-  int res;
-
-  // TODO: Return real statvfs values for your file system.
-  res = statvfs("/", stbuf);
-  if (res == -1) {
-    return -errno;
-  }
+  memset(stbuf, 0, sizeof(*stbuf));
+  stbuf->f_files = 2;  /* For . and .. in the root */
   return 0;
 }
 
