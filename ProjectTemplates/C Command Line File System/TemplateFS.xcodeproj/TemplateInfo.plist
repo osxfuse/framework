@@ -1,0 +1,13 @@
+{
+	FilesToRename = {
+		"TemplateFS.1" = "ÇPROJECTNAMEÈ.1";
+		"TemplateFS.c" = "ÇPROJECTNAMEASIDENTIFIERÈ.c";
+	};
+	FilesToMacroExpand = (
+		"ÇPROJECTNAMEÈ.xcodeproj/project.pbxproj",
+		"ÇPROJECTNAMEÈ.1",
+		"main.c",
+		"ÇPROJECTNAMEASIDENTIFIERÈ.c",
+	);
+	Description = "This project builds a command-line MacFUSE file system written in C.";
+}
