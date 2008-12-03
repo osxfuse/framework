@@ -1,0 +1,7 @@
+//
+// Prefix header for all source files of the 'TemplateFS' target in the 'TemplateFS' project.
+//
+
+#ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+#endif
