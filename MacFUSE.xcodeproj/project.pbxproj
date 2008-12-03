@@ -288,7 +288,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${SDK_NAME}.framework\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${MACFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${SDK_NAME}.bridgesupport\"\n";
+			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nTEMPLATE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProjectTemplates/\"\nmkdir \"$TEMPLATE_DIR\"\ncp -R \"${SOURCE_ROOT}/ProjectTemplates/\" \"$TEMPLATE_DIR\"\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${SDK_NAME}.framework\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${MACFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${SDK_NAME}.bridgesupport\"\n";
 			showEnvVarsInLog = 0;
 		};
 		FF8DE2320D4EFE7C0007BFF6 /* ShellScript */ = {
