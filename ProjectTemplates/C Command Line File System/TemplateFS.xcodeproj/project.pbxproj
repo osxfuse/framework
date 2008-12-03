@@ -143,10 +143,11 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
+          "-D__DARWIN_64_BIT_INO_T=1",
 					"-D__FreeBSD__=10",
 					"-DFUSE_USE_VERSION=26",
 				);
-				OTHER_LDFLAGS = "-lfuse";
+				OTHER_LDFLAGS = "-lfuse_ino64";
 				PRODUCT_NAME = "«PROJECTNAME»";
 			};
 			name = Debug;
@@ -162,10 +163,11 @@
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_CFLAGS = (
 					"-D_FILE_OFFSET_BITS=64",
+          "-D__DARWIN_64_BIT_INO_T=1",
 					"-D__FreeBSD__=10",
 					"-DFUSE_USE_VERSION=26",
 				);
-				OTHER_LDFLAGS = "-lfuse";
+				OTHER_LDFLAGS = "-lfuse_ino64";
 				PRODUCT_NAME = "«PROJECTNAME»";
 			};
 			name = Release;
