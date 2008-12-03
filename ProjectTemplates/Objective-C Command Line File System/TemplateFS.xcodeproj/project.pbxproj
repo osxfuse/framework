@@ -108,6 +108,7 @@
 				8DD76F990486AA7600D96B5E /* Sources */,
 				8DD76F9B0486AA7600D96B5E /* Frameworks */,
 				8DD76F9E0486AA7600D96B5E /* CopyFiles */,
+        FFF2CBC20EE65D6C0095C66B /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -135,6 +136,22 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FFF2CBC20EE65D6C0095C66B /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\n# Copy the volume icon (.icns) file to the binary's resource fork.\ncat \"\"${SOURCE_ROOT}/${PROJECT_NAME}.icns > \"${TARGET_BUILD_DIR}/${TARGET_NAME}/..namedfork/rsrc\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8DD76F990486AA7600D96B5E /* Sources */ = {

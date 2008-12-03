@@ -1,5 +1,6 @@
 {
 	FilesToRename = {
+		"TemplateFS.icns" = "ÇPROJECTNAMEÈ.icns";
 		"TemplateFS_Prefix.pch" = "ÇPROJECTNAMEÈ_Prefix.pch";
 		"TemplateFS.1" = "ÇPROJECTNAMEÈ.1";
 		"TemplateFS.d" = "ÇPROJECTNAMEASIDENTIFIERÈ.d";
