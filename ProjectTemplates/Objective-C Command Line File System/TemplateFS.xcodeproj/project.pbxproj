@@ -149,7 +149,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\n# Copy the volume icon (.icns) file to the binary's resource fork.\ncat \"\"${SOURCE_ROOT}/${PROJECT_NAME}.icns > \"${TARGET_BUILD_DIR}/${TARGET_NAME}/..namedfork/rsrc\"";
+			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\n# Copy the volume icon (.icns) file to the binary's resource fork.\ncat \"${SOURCE_ROOT}/${PROJECT_NAME}.icns\" > \"${TARGET_BUILD_DIR}/${TARGET_NAME}/..namedfork/rsrc\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
