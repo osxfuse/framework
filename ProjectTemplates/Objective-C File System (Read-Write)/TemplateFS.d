@@ -5,5 +5,5 @@
 macfuse_objc*:::delegate-entry 
 /execname == "ÇPROJECTNAMEÈ"/
 {
-    printf("%s: %s\n", probefunc, copyinstr(arg0));
+    printf("%-14d %s: %s\n", timestamp, probefunc, copyinstr(arg0));
 }
