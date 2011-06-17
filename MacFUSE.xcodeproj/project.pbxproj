@@ -20,21 +20,7 @@
 		28D525C10EA8076400B7CF7B /* GMDataBackedFileDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */; };
 		28D525C30EA8076400B7CF7B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
 		28D526C80EA8342500B7CF7B /* macfuse_objc_dtrace.d in Sources */ = {isa = PBXBuildFile; fileRef = 28D526C70EA8342500B7CF7B /* macfuse_objc_dtrace.d */; };
-		8DC2EF530486A6940098B216 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C1666FE841158C02AAC07 /* InfoPlist.strings */; };
-		FF43374C0D27697A00554C02 /* GMAppleDouble.h in Headers */ = {isa = PBXBuildFile; fileRef = FF4337460D27697A00554C02 /* GMAppleDouble.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FF43374D0D27697A00554C02 /* GMAppleDouble.m in Sources */ = {isa = PBXBuildFile; fileRef = FF4337470D27697A00554C02 /* GMAppleDouble.m */; };
-		FF43374E0D27697A00554C02 /* GMFinderInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = FF4337480D27697A00554C02 /* GMFinderInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FF43374F0D27697A00554C02 /* GMFinderInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = FF4337490D27697A00554C02 /* GMFinderInfo.m */; };
-		FF4337500D27697A00554C02 /* GMResourceFork.h in Headers */ = {isa = PBXBuildFile; fileRef = FF43374A0D27697A00554C02 /* GMResourceFork.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FF4337510D27697A00554C02 /* GMResourceFork.m in Sources */ = {isa = PBXBuildFile; fileRef = FF43374B0D27697A00554C02 /* GMResourceFork.m */; };
-		FF6C40220D300D7E00E51DD2 /* GMDataBackedFileDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */; };
-		FF6C40230D300D7E00E51DD2 /* GMDataBackedFileDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */; };
-		FF948E340ECB597A0047139E /* MacFUSE.hdoc in Resources */ = {isa = PBXBuildFile; fileRef = FF948E330ECB597A0047139E /* MacFUSE.hdoc */; };
-		FF999D040D25A4CE00920D03 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0867D69BFE84028FC02AAC07 /* Foundation.framework */; };
 		FF9CE9410EAC59C80006A9F1 /* MacFUSE.h in Headers */ = {isa = PBXBuildFile; fileRef = FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FF9CE9420EAC59C80006A9F1 /* MacFUSE.h in Headers */ = {isa = PBXBuildFile; fileRef = FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		FFC1BF7B0D2D81D5009D8847 /* GMUserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,7 +32,6 @@
 		28D526C70EA8342500B7CF7B /* macfuse_objc_dtrace.d */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.dtrace; path = macfuse_objc_dtrace.d; sourceTree = "<group>"; };
 		32DBCF5E0370ADEE00C91783 /* MacFUSE_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacFUSE_Prefix.pch; sourceTree = "<group>"; };
 		8DC2EF5A0486A6940098B216 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8DC2EF5B0486A6940098B216 /* MacFUSE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MacFUSE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF4337460D27697A00554C02 /* GMAppleDouble.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMAppleDouble.h; sourceTree = "<group>"; };
 		FF4337470D27697A00554C02 /* GMAppleDouble.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMAppleDouble.m; sourceTree = "<group>"; };
 		FF4337480D27697A00554C02 /* GMFinderInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMFinderInfo.h; sourceTree = "<group>"; };
@@ -58,7 +43,7 @@
 		FF948E330ECB597A0047139E /* MacFUSE.hdoc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = MacFUSE.hdoc; sourceTree = "<group>"; };
 		FF9CE9400EAC59C80006A9F1 /* MacFUSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacFUSE.h; sourceTree = "<group>"; };
 		FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GMUserFileSystem.h; sourceTree = "<group>"; };
-		FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GMUserFileSystem.m; sourceTree = "<group>"; };
+		FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.objc; path = GMUserFileSystem.m; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,21 +55,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		8DC2EF560486A6940098B216 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				FF999D040D25A4CE00920D03 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		034768DFFF38A50411DB9C8B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8DC2EF5B0486A6940098B216 /* MacFUSE.framework */,
 				28D525C80EA8076400B7CF7B /* MacFUSE.framework */,
 			);
 			name = Products;
@@ -181,19 +157,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		8DC2EF500486A6940098B216 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				FF43374C0D27697A00554C02 /* GMAppleDouble.h in Headers */,
-				FF43374E0D27697A00554C02 /* GMFinderInfo.h in Headers */,
-				FF4337500D27697A00554C02 /* GMResourceFork.h in Headers */,
-				FFC1BF7A0D2D81D5009D8847 /* GMUserFileSystem.h in Headers */,
-				FF6C40220D300D7E00E51DD2 /* GMDataBackedFileDelegate.h in Headers */,
-				FF9CE9420EAC59C80006A9F1 /* MacFUSE.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -217,26 +180,6 @@
 			productReference = 28D525C80EA8076400B7CF7B /* MacFUSE.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		8DC2EF4F0486A6940098B216 /* MacFUSE-10.4 */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1DEB91AD08733DA50010E9CD /* Build configuration list for PBXNativeTarget "MacFUSE-10.4" */;
-			buildPhases = (
-				8DC2EF500486A6940098B216 /* Headers */,
-				8DC2EF520486A6940098B216 /* Resources */,
-				8DC2EF540486A6940098B216 /* Sources */,
-				8DC2EF560486A6940098B216 /* Frameworks */,
-				FF8DE2320D4EFE7C0007BFF6 /* ShellScript */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "MacFUSE-10.4";
-			productInstallPath = /Library/Frameworks;
-			productName = MacFUSE;
-			productReference = 8DC2EF5B0486A6940098B216 /* MacFUSE.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -244,13 +187,16 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "MacFUSE" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 0867D691FE84028FC02AAC07 /* MacFUSE */;
 			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8DC2EF4F0486A6940098B216 /* MacFUSE-10.4 */,
 				28D525B30EA8076400B7CF7B /* MacFUSE-10.5 */,
 			);
 		};
@@ -262,15 +208,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				28D525BB0EA8076400B7CF7B /* InfoPlist.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8DC2EF520486A6940098B216 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				8DC2EF530486A6940098B216 /* InfoPlist.strings in Resources */,
-				FF948E340ECB597A0047139E /* MacFUSE.hdoc in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,20 +228,6 @@
 			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nTEMPLATE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProjectTemplates/\"\nmkdir \"$TEMPLATE_DIR\"\ncp -R \"${SOURCE_ROOT}/ProjectTemplates/\" \"$TEMPLATE_DIR\"\nfind \"$TEMPLATE_DIR\" -type d -name '.svn' -exec rm -rf '{}' \\; > /dev/null 2>&1 || true\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${SDK_NAME}.framework\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${MACFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${SDK_NAME}.bridgesupport\"\n\nDEBUG_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Debug/\"\nmkdir \"$DEBUG_DIR\"\ncp -R \"${OUT_FRAMEWORK}.dSYM\" \"$DEBUG_DIR\"\n";
 			showEnvVarsInLog = 0;
 		};
-		FF8DE2320D4EFE7C0007BFF6 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 12;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${SDK_NAME}.framework\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${MACFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${SDK_NAME}.bridgesupport\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -318,18 +241,6 @@
 				28D525C00EA8076400B7CF7B /* GMUserFileSystem.m in Sources */,
 				28D525C10EA8076400B7CF7B /* GMDataBackedFileDelegate.m in Sources */,
 				28D526C80EA8342500B7CF7B /* macfuse_objc_dtrace.d in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8DC2EF540486A6940098B216 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				FF43374D0D27697A00554C02 /* GMAppleDouble.m in Sources */,
-				FF43374F0D27697A00554C02 /* GMFinderInfo.m in Sources */,
-				FF4337510D27697A00554C02 /* GMResourceFork.m in Sources */,
-				FFC1BF7B0D2D81D5009D8847 /* GMUserFileSystem.m in Sources */,
-				FF6C40230D300D7E00E51DD2 /* GMDataBackedFileDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,68 +258,16 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		1DEB91AE08733DA50010E9CD /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 28D5261B0EA80E7000B7CF7B /* MacFUSE.xcconfig */;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				COPY_PHASE_STRIP = NO;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				FRAMEWORK_VERSION = A;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
-				GCC_WARN_UNUSED_VARIABLE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INSTALL_PATH = /Library/Frameworks;
-				PRODUCT_NAME = MacFUSE;
-				"SDKROOT[arch=*]" = macosx10.4;
-				WRAPPER_EXTENSION = framework;
-				ZERO_LINK = YES;
-			};
-			name = Debug;
-		};
-		1DEB91AF08733DA50010E9CD /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 28D5261B0EA80E7000B7CF7B /* MacFUSE.xcconfig */;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				FRAMEWORK_VERSION = A;
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
-				GCC_WARN_UNUSED_VARIABLE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INSTALL_PATH = /Library/Frameworks;
-				PRODUCT_NAME = MacFUSE;
-				"SDKROOT[arch=*]" = macosx10.4;
-				STRIPFLAGS = "";
-				WRAPPER_EXTENSION = framework;
-			};
-			name = Release;
-		};
 		1DEB91B208733DA50010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 28D5261B0EA80E7000B7CF7B /* MacFUSE.xcconfig */;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					x86_64,
-					ppc,
-					ppc64,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = 4.0;
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -427,8 +286,7 @@
 					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
-				SDKROOT = macosx10.4;
-				"SDKROOT[arch=*64]" = macosx10.5;
+				SDKROOT = macosx10.6;
 			};
 			name = Debug;
 		};
@@ -436,18 +294,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 28D5261B0EA80E7000B7CF7B /* MacFUSE.xcconfig */;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					x86_64,
-					ppc,
-					ppc64,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = 4.0;
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -467,8 +320,7 @@
 					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
-				SDKROOT = macosx10.4;
-				"SDKROOT[arch=*64]" = macosx10.5;
+				SDKROOT = macosx10.6;
 				SEPARATE_STRIP = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
@@ -491,6 +343,7 @@
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = /Library/Frameworks;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-D__DARWIN_64_BIT_INO_T=1",
 					"-D__FreeBSD__=10",
@@ -504,7 +357,7 @@
 					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PRODUCT_NAME = MacFUSE;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx10.6;
 				WRAPPER_EXTENSION = framework;
 				ZERO_LINK = YES;
 			};
@@ -523,6 +376,7 @@
 				GCC_PREFIX_HEADER = MacFUSE_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = /Library/Frameworks;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-D__DARWIN_64_BIT_INO_T=1",
 					"-D__FreeBSD__=10",
@@ -536,7 +390,7 @@
 					"-L$(MACFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PRODUCT_NAME = MacFUSE;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx10.6;
 				STRIPFLAGS = "";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -545,15 +399,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1DEB91AD08733DA50010E9CD /* Build configuration list for PBXNativeTarget "MacFUSE-10.4" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1DEB91AE08733DA50010E9CD /* Debug */,
-				1DEB91AF08733DA50010E9CD /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
 		1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "MacFUSE" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
