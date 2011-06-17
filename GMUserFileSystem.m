@@ -2425,7 +2425,7 @@ static struct fuse_operations fusefm_oper = {
   // filesystems. This leads to deadlock when we re-enter our mounted fuse fs. 
   // Once initialized it seems to work fine.
   NSFileManager* fileManager = [NSFileManager defaultManager];
-  [fileManager directoryContentsAtPath:@"/Volumes"];
+  [fileManager contentsOfDirectoryAtPath:@"/Volumes" error:nil];
 
   NSMutableArray* arguments = 
     [NSMutableArray arrayWithObject:[[NSBundle mainBundle] executablePath]];
