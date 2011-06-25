@@ -464,8 +464,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Finder Info, Resource Forks and HFS headers
 
 - (NSDictionary *)finderAttributesAtPath:(NSString *)path {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
 
   UInt16 flags = 0;
@@ -518,8 +518,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (NSDictionary *)resourceAttributesAtPath:(NSString *)path {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
   
   id delegate = [internal_ delegate];
@@ -862,10 +862,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)moveItemAtPath:(NSString *)source 
                 toPath:(NSString *)destination
                  error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@ -> %@", source, destination];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(moveItemAtPath:toPath:error:)]) {
@@ -879,8 +879,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Removing an Item
 
 - (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }  
 
   if ([[internal_ delegate] respondsToSelector:@selector(removeDirectoryAtPath:error:)]) {
@@ -890,8 +890,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }  
 
   if ([[internal_ delegate] respondsToSelector:@selector(removeItemAtPath:error:)]) {
@@ -907,10 +907,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)createDirectoryAtPath:(NSString *)path 
                    attributes:(NSDictionary *)attributes
                         error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSMutableString* traceinfo = 
      [NSMutableString stringWithFormat:@"%@ [%@]", path, attributes]; 
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
   
   if ([[internal_ delegate] respondsToSelector:@selector(createDirectoryAtPath:attributes:error:)]) {
@@ -925,9 +925,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
               attributes:(NSDictionary *)attributes
                 userData:(id *)userData
                    error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@ [%@]", path, attributes]; 
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:userData:error:)]) {
@@ -949,9 +949,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
                  error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@ -> %@", path, otherPath];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(linkItemAtPath:toPath:error:)]) {
@@ -967,9 +967,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
                            error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@ -> %@", path, otherPath];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }  
   
   if ([[internal_ delegate] respondsToSelector:@selector(createSymbolicLinkAtPath:withDestinationPath:error:)]) {
@@ -984,8 +984,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
                                         error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
   
   if ([[internal_ delegate] respondsToSelector:@selector(destinationOfSymbolicLinkAtPath:error:)]) {
@@ -1000,8 +1000,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 // NOTE: Only call this if the delegate does indeed support this method.
 - (NSData *)contentsAtPath:(NSString *)path {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
 
   id delegate = [internal_ delegate];
@@ -1012,9 +1012,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                   mode:(int)mode
               userData:(id *)userData 
                  error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@, mode=0x%x", path, mode];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   id delegate = [internal_ delegate];
@@ -1076,10 +1076,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)releaseFileAtPath:(NSString *)path userData:(id)userData {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo =
       [NSString stringWithFormat:@"%@, userData=%p", path, userData];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
   
   if (userData != nil && 
@@ -1100,11 +1100,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  size:(size_t)size 
                offset:(off_t)offset
                 error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo =
       [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
        path, userData, offset, size];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if (userData != nil &&
@@ -1136,11 +1136,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
        path, userData, offset, size];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if (userData != nil &&
@@ -1189,9 +1189,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
                   withItemAtPath:(NSString *)path2
                            error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = [NSString stringWithFormat:@"%@ <-> %@", path1, path2];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(exchangeDataOfItemAtPath:withItemAtPath:error:)]) {
@@ -1206,8 +1206,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Directory Contents
 
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
 
   NSArray* contents = nil;
@@ -1258,10 +1258,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
                                 userData:userData
                                    error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo =
       [NSString stringWithFormat:@"%@, userData=%p", path, userData];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   id delegate = [internal_ delegate];
@@ -1395,8 +1395,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
                                           error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }  
 
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
@@ -1428,11 +1428,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
          ofItemAtPath:(NSString *)path
              userData:(id)userData
                 error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, userData=%p, attributes=%@", 
        path, userData, attributes];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   // NOTE: For backward compatibility with version 1.7 and prior.
@@ -1463,10 +1463,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)setAttributes:(NSDictionary *)attributes
    ofFileSystemAtPath:(NSString *)path
                 error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, attributes=%@", path, attributes];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofFileSystemAtPath:error:)]) {
@@ -1479,8 +1479,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #pragma mark Extended Attributes
 
 - (NSArray *)extendedAttributesOfItemAtPath:path error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(path));
   }
 
   if ([[internal_ delegate] respondsToSelector:@selector(extendedAttributesOfItemAtPath:error:)]) {
@@ -1494,10 +1494,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                         ofItemAtPath:(NSString *)path
                             position:(off_t)position
                                error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, name=%@, position=%lld", path, name, position];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   id delegate = [internal_ delegate];
@@ -1549,11 +1549,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                     position:(off_t)position
                      options:(int)options
                        error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, name=%@, position=%lld, options=0x%x", 
        path, name, position, options];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
   id delegate = [internal_ delegate];
@@ -1579,10 +1579,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 - (BOOL)removeExtendedAttribute:(NSString *)name
                    ofItemAtPath:(NSString *)path
                           error:(NSError **)error {
-  if (MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
+  if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
       [NSString stringWithFormat:@"%@, name=%@", path, name];
-    MACFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
+    OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }  
   
   id delegate = [internal_ delegate];
@@ -2324,7 +2324,7 @@ static struct fuse_operations fusefm_oper = {
   int rc = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
   if (rc == 0) {
     if (statfs_buf.DEAD_FS_FIELD == (short)(-1)) {
-      // We use a special indicator value from MacFUSE in the f_fssubtype field
+      // We use a special indicator value from OSXFUSE in the f_fssubtype field
       // to indicate that the currently mounted filesystem is dead. It probably 
       // crashed and was never unmounted.
       // NOTE: If we ever drop 10.4 support, then we can use statfs64 and get 

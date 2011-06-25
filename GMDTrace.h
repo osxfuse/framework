@@ -17,17 +17,17 @@ extern "C" {
 /* Leopard+ */
 
 #include <sys/sdt.h>
-#include <macfuse_objc_dtrace.h>
+#include <osxfuse_objc_dtrace.h>
 
 #else
 
 /* Tiger- */
 
-#define MACFUSE_OBJC_DELEGATE_ENTRY(arg0)
-#define MACFUSE_OBJC_DELEGATE_RETURN(arg0)
+#define OSXFUSE_OBJC_DELEGATE_ENTRY(arg0)
+#define OSXFUSE_OBJC_DELEGATE_RETURN(arg0)
 
-#define MACFUSE_OBJC_DELEGATE_ENTRY_ENABLED()  0
-#define MACFUSE_OBJC_DELEGATE_RETURN_ENABLED() 0
+#define OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()  0
+#define OSXFUSE_OBJC_DELEGATE_RETURN_ENABLED() 0
 
 #endif /* Leopard+/Tiger */
 

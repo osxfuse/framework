@@ -75,8 +75,8 @@
  * kGMUserFileSystemMountPathkey.<br>
  *
  * The best way to get started with GMUserFileSystem is to look at some example
- * file systems that use MacFUSE.framework. See the example file systems found
- * <a href="http://macfuse.googlecode.com/svn/trunk/filesystems-objc/">here</a>.
+ * file systems that use OSXFUSE.framework. See the example file systems found
+ * <a href="https://github.com/osxfuse/filesystems/">here</a>.
  */
 GM_EXPORT @interface GMUserFileSystem : NSObject {
  @private
@@ -111,8 +111,7 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
 /*!
  * @abstract Mount the file system at the given path.
  * @discussion Mounts the file system at mountPath with the given set of options.
- * The set of available options can be found on the 
- * <a href="http://code.google.com/p/macfuse/wiki/OPTIONS">options</a> wiki page.
+ * The set of available options can be found on the options wiki page.
  * For example, to turn on debug output add \@"debug" to the options NSArray.
  * If the mount succeeds, then a kGMUserFileSystemDidMount notification is posted
  * to the default noification center. If the mount fails, then a 
