@@ -282,7 +282,7 @@
 					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse_ino64",
+					"-losxfuse_i64",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
@@ -316,7 +316,7 @@
 					"${CUSTOM_CFLAGS}",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse_ino64",
+					"-losxfuse_i64",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
@@ -353,12 +353,7 @@
 					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
 					"${CUSTOM_CFLAGS}",
 				);
-				OTHER_LDFLAGS = (
-					"-losxfuse_ino64",
-					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
-				);
 				PRODUCT_NAME = OSXFUSE;
-				SDKROOT = macosx10.6;
 				WRAPPER_EXTENSION = framework;
 				ZERO_LINK = YES;
 			};
@@ -387,12 +382,7 @@
 					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
 					"${CUSTOM_CFLAGS}",
 				);
-				OTHER_LDFLAGS = (
-					"-losxfuse_ino64",
-					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
-				);
 				PRODUCT_NAME = OSXFUSE;
-				SDKROOT = macosx10.6;
 				STRIPFLAGS = "";
 				WRAPPER_EXTENSION = framework;
 			};
