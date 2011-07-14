@@ -279,7 +279,7 @@
 					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
+					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
 				);
 				OTHER_LDFLAGS = (
 					"-losxfuse_i64",
@@ -312,7 +312,7 @@
 					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
+					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
 					"${CUSTOM_CFLAGS}",
 				);
 				OTHER_LDFLAGS = (
@@ -350,7 +350,7 @@
 					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
+					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
 					"${CUSTOM_CFLAGS}",
 				);
 				PRODUCT_NAME = OSXFUSE;
@@ -379,7 +379,7 @@
 					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
 					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include",
+					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
 					"${CUSTOM_CFLAGS}",
 				);
 				PRODUCT_NAME = OSXFUSE;
