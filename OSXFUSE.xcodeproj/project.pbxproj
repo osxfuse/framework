@@ -282,7 +282,7 @@
 					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse_i64",
+					"-losxfuse",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
@@ -316,7 +316,7 @@
 					"${CUSTOM_CFLAGS}",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse_i64",
+					"-losxfuse",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 				);
 				PREBINDING = NO;
