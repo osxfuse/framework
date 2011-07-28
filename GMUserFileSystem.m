@@ -1586,7 +1586,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }  
   
   id delegate = [internal_ delegate];
-  if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
+  if ([delegate respondsToSelector:@selector(removeExtendedAttribute:ofItemAtPath:error:)]) {
     return [delegate removeExtendedAttribute:name 
                                 ofItemAtPath:path 
                                        error:error];
