@@ -2149,7 +2149,7 @@ static int fusefm_getxtimes(const char* path, struct timespec* bkuptime,
         crtime->tv_sec = t_sec;
         crtime->tv_nsec = t_nsec;          
       } else {
-        memset(crtime, 0, sizeof(crtime));
+        memset(crtime, 0, sizeof(struct timespec));
       }
       NSDate* backupDate = [attribs objectForKey:kGMUserFileSystemFileBackupDateKey];
       if (backupDate) {
@@ -2160,7 +2160,7 @@ static int fusefm_getxtimes(const char* path, struct timespec* bkuptime,
         bkuptime->tv_sec = t_sec;
         bkuptime->tv_nsec = t_nsec;
       } else {
-        memset(bkuptime, 0, sizeof(bkuptime));
+        memset(bkuptime, 0, sizeof(struct timespec));
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
