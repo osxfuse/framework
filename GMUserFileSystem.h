@@ -329,7 +329,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 #pragma mark File Contents
 
 /*!
- * @abstract Returns directory contents at the specified path.
+ * @abstract Returns file contents at the specified path.
  * @discussion Returns the full contents at the given path. Implementation of
  * this delegate method is recommended only by very simple file systems that are 
  * not concerned with performance. If contentsAtPath is implemented then you can 
