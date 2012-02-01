@@ -260,7 +260,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  *   <li>kGMUserFileSystemFileBackupDateKey (if supports extended dates)
  *   <li>kGMUserFileSystemFileChangeDateKey
  *   <li>kGMUserFileSystemFileAccessDateKey
- *   <li>kGMUserFileSystemFileFlagsKey</ul>
+ *   <li>kGMUserFileSystemFileFlagsKey
+ *   <li>kGMUserFileSystemFileSizeInBlocksKey</ul>
  *
  * If this is the fstat variant and userData was supplied in openFileAtPath: or 
  * createFileAtPath: then it will be passed back in this call.
@@ -284,7 +285,9 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  *   <li>NSFileSystemFreeSize
  *   <li>NSFileSystemNodes
  *   <li>NSFileSystemFreeNodes
- *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey</ul>
+ *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey
+ *   <li>kGMUserFileSystemVolumeMaxFilenameLengthKey
+ *   <li>kGMUserFileSystemVolumeFileSystemBlockSizeKey</ul>
  *
  * @seealso man statvfs(3)
  * @param path A path on the file system (it is safe to ignore this).
@@ -681,6 +684,13 @@ extern NSString* const kGMUserFileSystemFileChangeDateKey;
  */
 extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
+/*! 
+ * @abstract  For file size in 512 byte blocks. 
+ * @discussion The value should be an NSNumber that is the file size in 512 byte 
+ * blocks. It is ignored unless the file system is mounted with option \@"sparse".
+ */
+extern NSString* const kGMUserFileSystemFileSizeInBlocksKey;
+
 #pragma mark Additional Volume Attribute Keys
 
 /*! @group Additional Volume Attribute Keys */
@@ -691,6 +701,20 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
  * not the file system supports extended dates such as creation and backup dates.
  */
 extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
+
+/*! 
+ * @abstract Specifies the maximum filename length in bytes.
+ * @discussion The value should be an NSNumber that is the maximum filename length
+ * in bytes. If omitted 255 bytes is assumed.
+ */	
+extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey;	
+	
+/*! 
+ * @abstract Specifies the file system block size in bytes.
+ * @discussion The value should be an NSNumber that is the file system block size
+ * in bytes. If omitted 4096 bytes is assumed.
+ */
+extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
