@@ -348,13 +348,21 @@ typedef enum {
     detachNewThread:(BOOL)detachNewThread {
   [internal_ setMountPath:mountPath];
   NSMutableArray* optionsCopy = [NSMutableArray array];
+  BOOL hasIcon = NO;
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
     if ([option caseInsensitiveCompare:@"rdonly"] == NSOrderedSame ||
         [option caseInsensitiveCompare:@"ro"] == NSOrderedSame) {
       [internal_ setIsReadOnly:YES];
     }
+    hasIcon = hasIcon || [[option lowercaseString] hasPrefix:@"volicon="];
     [optionsCopy addObject:[[option copy] autorelease]];
+  }
+  if (!hasIcon) {
+    NSBundle *framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
+    [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
+                            [framework pathForResource:@"OSXFUSE"
+                                                ofType:@"icns"]]];
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
