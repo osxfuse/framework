@@ -260,6 +260,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
@@ -267,22 +268,20 @@
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
-					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
-					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
+					"-D_DARWIN_USE_64_BIT_INODE",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
+					"-losxfuse",
 				);
-				PREBINDING = NO;
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -292,6 +291,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
@@ -299,23 +299,20 @@
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
 				OTHER_CFLAGS = (
-					"-D__FreeBSD__=10",
 					"-D_FILE_OFFSET_BITS=64",
-					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
-					"${CUSTOM_CFLAGS}",
+					"-D_DARWIN_USE_64_BIT_INODE",
 				);
 				OTHER_LDFLAGS = (
-					"-losxfuse",
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
+					"-losxfuse",
 				);
-				PREBINDING = NO;
 				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -340,14 +337,6 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
-				OTHER_CFLAGS = (
-					"-D__DARWIN_64_BIT_INO_T=1",
-					"-D__FreeBSD__=10",
-					"-D_FILE_OFFSET_BITS=64",
-					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
-					"${CUSTOM_CFLAGS}",
-				);
 				PRODUCT_NAME = OSXFUSE;
 				SDK_NAME = "$(PRODUCT_NAME)";
 				WRAPPER_EXTENSION = framework;
@@ -368,14 +357,6 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
-				OTHER_CFLAGS = (
-					"-D__DARWIN_64_BIT_INO_T=1",
-					"-D__FreeBSD__=10",
-					"-D_FILE_OFFSET_BITS=64",
-					"-std=c99",
-					"-I$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse",
-					"${CUSTOM_CFLAGS}",
-				);
 				PRODUCT_NAME = OSXFUSE;
 				SDK_NAME = "$(PRODUCT_NAME)";
 				STRIPFLAGS = "";
