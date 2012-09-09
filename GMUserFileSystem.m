@@ -2432,8 +2432,9 @@ static struct fuse_operations fusefm_oper = {
   // NSFileManager class will do lazy init and will query all mounted
   // filesystems. This leads to deadlock when we re-enter our mounted fuse fs. 
   // Once initialized it seems to work fine.
-  NSFileManager* fileManager = [[[NSFileManager alloc] init] autorelease];
+  NSFileManager* fileManager = [[NSFileManager alloc] init];
   [fileManager contentsOfDirectoryAtPath:@"/Volumes" error:nil];
+  [fileManager release];
 
   NSMutableArray* arguments = 
     [NSMutableArray arrayWithObject:[[NSBundle mainBundle] executablePath]];
