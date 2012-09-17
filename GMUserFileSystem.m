@@ -346,20 +346,42 @@ typedef enum {
   [internal_ setMountPath:mountPath];
   NSMutableArray* optionsCopy = [NSMutableArray array];
   BOOL hasIcon = NO;
+  BOOL usesModules = NO;
+  NSInteger moduleOptionId;
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
     if ([option caseInsensitiveCompare:@"rdonly"] == NSOrderedSame ||
         [option caseInsensitiveCompare:@"ro"] == NSOrderedSame) {
       [internal_ setIsReadOnly:YES];
     }
-    hasIcon = hasIcon || [[option lowercaseString] hasPrefix:@"volicon="];
+    hasIcon = hasIcon || ([[option lowercaseString] hasPrefix:@"volicon="] || [[option lowercaseString] hasPrefix:@"iconpath="]);
+
+    if ([[option lowercaseString] hasPrefix:@"modules="]) {
+			usesModules = YES;
+      moduleOptionId = i;
+    }
     [optionsCopy addObject:[[option copy] autorelease]];
   }
   if (!hasIcon) {
     NSBundle *framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
-    [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
-                            [framework pathForResource:@"OSXFUSE"
-                                                ofType:@"icns"]]];
+
+    if (usesModules) {
+      NSMutableString *optionStr = [NSMutableString stringWithString:[options objectAtIndex:moduleOptionId]];
+      NSRange moduleRange = [optionStr rangeOfString:@"modules=" options:NSCaseInsensitiveSearch];
+
+      if (moduleRange.location != NSNotFound) {
+        [optionStr replaceCharactersInRange:moduleRange withString:@"modules=volicon:"];
+        [optionsCopy replaceObjectAtIndex:moduleOptionId withObject:optionStr];
+      }
+
+    	[optionsCopy addObject:[NSString stringWithFormat:@"iconpath=%@",
+                              [framework pathForResource:@"OSXFUSE"
+                                                  ofType:@"icns"]]];
+    } else {
+    	[optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
+                              [framework pathForResource:@"OSXFUSE"
+                                                  ofType:@"icns"]]];
+    }
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
