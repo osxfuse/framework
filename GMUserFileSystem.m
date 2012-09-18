@@ -357,14 +357,15 @@ typedef enum {
     hasIcon = hasIcon || ([[option lowercaseString] hasPrefix:@"volicon="] || [[option lowercaseString] hasPrefix:@"iconpath="]);
 
     if ([[option lowercaseString] hasPrefix:@"modules="]) {
-			usesModules = YES;
+      usesModules = YES;
       moduleOptionId = i;
     }
     [optionsCopy addObject:[[option copy] autorelease]];
   }
   if (!hasIcon) {
     NSBundle *framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
-
+    NSString *iconPath = [framework pathForResource:@"OSXFUSE" ofType:@"icns"];
+    
     if (usesModules) {
       NSMutableString *optionStr = [NSMutableString stringWithString:[options objectAtIndex:moduleOptionId]];
       NSRange moduleRange = [optionStr rangeOfString:@"modules=" options:NSCaseInsensitiveSearch];
@@ -374,13 +375,9 @@ typedef enum {
         [optionsCopy replaceObjectAtIndex:moduleOptionId withObject:optionStr];
       }
 
-    	[optionsCopy addObject:[NSString stringWithFormat:@"iconpath=%@",
-                              [framework pathForResource:@"OSXFUSE"
-                                                  ofType:@"icns"]]];
+      [optionsCopy addObject:[NSString stringWithFormat:@"iconpath=%@", iconPath]];
     } else {
-    	[optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
-                              [framework pathForResource:@"OSXFUSE"
-                                                  ofType:@"icns"]]];
+      [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@", iconPath]];
     }
   }
   NSDictionary* args = 
