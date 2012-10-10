@@ -348,11 +348,14 @@ typedef enum {
   BOOL hasIcon = NO;
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
-    if ([option caseInsensitiveCompare:@"rdonly"] == NSOrderedSame ||
-        [option caseInsensitiveCompare:@"ro"] == NSOrderedSame) {
+    NSString* optionLowercase = [option lowercaseString];
+    if ([optionLowercase compare:@"rdonly"] == NSOrderedSame ||
+        [optionLowercase compare:@"ro"] == NSOrderedSame) {
       [internal_ setIsReadOnly:YES];
     }
-    hasIcon = hasIcon || [[option lowercaseString] hasPrefix:@"volicon="];
+    hasIcon = hasIcon ||
+              [optionLowercase hasPrefix:@"volicon="] ||
+              [optionLowercase hasPrefix:@"iconpath="];
     [optionsCopy addObject:[[option copy] autorelease]];
   }
   if (!hasIcon) {
