@@ -364,7 +364,7 @@ typedef enum {
   if (!hasIcon) {
     NSBundle *framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
     [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
-                            [framework pathForResource:@"OSXFUSE"
+                            [framework pathForResource:@"DefaultVolumeIcon"
                                                 ofType:@"icns"]]];
   }
   NSDictionary* args = 
