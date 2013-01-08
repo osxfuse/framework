@@ -362,10 +362,15 @@ typedef enum {
     [optionsCopy addObject:[[option copy] autorelease]];
   }
   if (!hasIcon) {
-    NSBundle *framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
-    [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
-                            [framework pathForResource:@"DefaultVolumeIcon"
-                                                ofType:@"icns"]]];
+    NSBundle* framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
+    NSString* voliconPath = [framework pathForResource:@"DefaultVolumeIcon"
+                                                ofType:@"icns"];
+    NSFileManager* fileManager = [[NSFileManager alloc] init];
+    if ([fileManager fileExistsAtPath:voliconPath]) {
+      [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
+                              voliconPath]];
+    }
+    [fileManager release];
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
