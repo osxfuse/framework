@@ -1126,8 +1126,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                 error:(NSError **)error {
   if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo =
-      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
-       path, userData, offset, size];
+      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%lu", 
+       path, userData, offset, (unsigned long)size];
     OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
@@ -1162,8 +1162,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                  error:(NSError **)error {
   if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
     NSString* traceinfo = 
-      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%d", 
-       path, userData, offset, size];
+      [NSString stringWithFormat:@"%@, userData=%p, offset=%lld, size=%lu", 
+       path, userData, offset, (unsigned long)size];
     OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 

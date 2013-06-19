@@ -246,13 +246,13 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -269,7 +269,6 @@
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 					"-losxfuse",
 				);
-				SDKROOT = macosx10.7;
 				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
 			};
 			name = Debug;
@@ -279,6 +278,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -286,7 +286,6 @@
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -303,7 +302,6 @@
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 					"-losxfuse",
 				);
-				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
@@ -315,7 +313,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DYLIB_COMPATIBILITY_VERSION = 2;
 				DYLIB_CURRENT_VERSION = 2;
 				FRAMEWORK_VERSION = A;
@@ -337,7 +334,6 @@
 		28D525C70EA8076400B7CF7B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DYLIB_COMPATIBILITY_VERSION = 2;
 				DYLIB_CURRENT_VERSION = 2;
 				FRAMEWORK_VERSION = A;
