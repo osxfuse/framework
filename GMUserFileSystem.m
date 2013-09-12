@@ -1973,7 +1973,7 @@ static int fusefm_mkdir(const char* path, mode_t mode) {
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
                        attributes:attribs
-                            error:(NSError **)error]) {
+                            error:&error]) {
       ret = 0;  // Success!
     } else {
       if (error != nil) {
