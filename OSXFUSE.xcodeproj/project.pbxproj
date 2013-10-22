@@ -325,7 +325,15 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
+				OSXFUSE_BUILD_ROOT = "";
+				OTHER_LDFLAGS = (
+					"-L$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/lib",
+					"-losxfuse",
+				);
+				PREFIX = /usr/local;
 				PRODUCT_NAME = "$(OSXFUSE_DISPLAY_NAME)";
+				SDK_NAME = "$(PRODUCT_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/include/osxfuse";
 				WRAPPER_EXTENSION = framework;
 				ZERO_LINK = YES;
 			};
@@ -343,8 +351,16 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
+				OSXFUSE_BUILD_ROOT = "";
+				OTHER_LDFLAGS = (
+					"-L$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/lib",
+					"-losxfuse",
+				);
+				PREFIX = /usr/local;
 				PRODUCT_NAME = "$(OSXFUSE_DISPLAY_NAME)";
+				SDK_NAME = "$(PRODUCT_NAME)";
 				STRIPFLAGS = "";
+				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/include/osxfuse";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Release;
