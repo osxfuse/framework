@@ -186,6 +186,8 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = 1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "OSXFUSE" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
@@ -266,10 +268,8 @@
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -285,7 +285,7 @@
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 					"-losxfuse",
 				);
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.9;
 				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
 			};
 			name = Debug;
@@ -297,10 +297,8 @@
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -316,7 +314,7 @@
 					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
 					"-losxfuse",
 				);
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.9;
 				SEPARATE_STRIP = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
