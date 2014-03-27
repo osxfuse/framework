@@ -1659,7 +1659,7 @@ static int fusefm_fgetattr(const char *path, struct stat *stbuf,
     memset(stbuf, 0, sizeof(struct stat));
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    id userData = fi ? (id)(uintptr_t)fi->fh : nil;
+    id userData = fi ? [NSNumber numberWithUnsignedLongLong:fi->fh] : nil;
     if ([fs fillStatBuffer:stbuf 
                    forPath:[NSString stringWithUTF8String:path]
                   userData:userData
@@ -1723,8 +1723,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
                        error:&error]) {
       ret = 0;
       if (userData != nil) {
-        [userData retain];
-        fi->fh = (uintptr_t)userData;
+        fi->fh = [userData unsignedLongLongValue];
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1750,8 +1749,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
                      error:&error]) {
       ret = 0;
       if (userData != nil) {
-        [userData retain];
-        fi->fh = (uintptr_t)userData;
+        fi->fh = [userData unsignedLongLongValue];
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1766,12 +1764,9 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
 static int fusefm_release(const char *path, struct fuse_file_info *fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   @try {
-    id userData = (id)(uintptr_t)fi->fh;
+    id userData = [NSNumber numberWithLongLong:fi->fh];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     [fs releaseFileAtPath:[NSString stringWithUTF8String:path] userData:userData];
-    if (userData) {
-      [userData release]; 
-    }
   }
   @catch (id exception) { }
   [pool release];
@@ -1793,7 +1788,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
-                     userData:(id)(uintptr_t)fi->fh
+                     userData:[NSNumber numberWithUnsignedLongLong:fi->fh]
                        buffer:buf
                          size:size
                        offset:offset
@@ -1814,7 +1809,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
-                    userData:(id)(uintptr_t)fi->fh
+                    userData:[NSNumber numberWithUnsignedLongLong:fi->fh]
                       buffer:buf
                         size:size
                       offset:offset
@@ -1890,7 +1885,7 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
                     ofItemAtPath:[NSString stringWithUTF8String:path]
                            value:[NSData dataWithBytes:value length:size]
                         position:position
-                           options:options
+                         options:options
                            error:&error]) {
       ret = 0;
     } else {
@@ -2261,7 +2256,7 @@ static int fusefm_fsetattr_x(const char* path, struct setattr_x* attrs,
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
              ofItemAtPath:[NSString stringWithUTF8String:path]
-                 userData:(fi ? (id)(uintptr_t)fi->fh : nil)
+                 userData:(fi ? [NSNumber numberWithUnsignedLongLong:fi->fh] : nil)
                     error:&error]) {
       ret = 0;
     } else {

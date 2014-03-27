@@ -180,6 +180,8 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = 1DEB91B108733DA50010E9CD /* Build configuration list for PBXProject "OSXFUSE" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
@@ -250,7 +252,6 @@
 				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -283,7 +284,6 @@
 				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_ENABLE_OBJC_GC = supported;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
