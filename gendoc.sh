@@ -5,7 +5,7 @@
 # If we don't have a documentation directory, just generate the docs.
 if [ ! -d Documentation ]
 then
-  headerdoc2html -u -o Documentation MacFUSE.hdoc GMUserFileSystem.h GMFinderInfo.h GMResourceFork.h GMAppleDouble.h
+  headerdoc2html -u -o Documentation OSXFUSE.hdoc GMUserFileSystem.h GMFinderInfo.h GMResourceFork.h GMAppleDouble.h
   gatherheaderdoc Documentation index.html
 exit 0
 fi
@@ -19,7 +19,7 @@ then
 fi
 mv Documentation Documentation.tmp
 mkdir Documentation
-headerdoc2html -u -o Documentation MacFUSE.hdoc GMUserFileSystem.h GMFinderInfo.h GMResourceFork.h GMAppleDouble.h
+headerdoc2html -u -o Documentation OSXFUSE.hdoc GMUserFileSystem.h GMFinderInfo.h GMResourceFork.h GMAppleDouble.h
 gatherheaderdoc Documentation index.html
 cp -r Documentation/ Documentation.tmp
 rm -rf Documentation
