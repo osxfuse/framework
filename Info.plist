@@ -6,23 +6,23 @@
 	<string>English</string>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
-	<key>CFBundleGetInfoString</key>
-	<string>${OSXFUSE_DISPLAY_NAME} Framework</string>
+	<key>CFBundleName</key>
+	<string>${PRODUCT_NAME}</string>
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
-	<string>${FRAMEWORK_BUNDLE_IDENTIFIER}</string>
+	<string>${OSXFUSE_FRAMEWORK_BUNDLE_IDENTIFIER}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>${PRODUCT_NAME}</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
-	<key>CFBundleShortVersionString</key>
-	<string>OSXFUSE_CORE_VERSION</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>OSXFUSE_CORE_VERSION</string>
+	<string>${OSXFUSE_VERSION}</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${OSXFUSE_VERSION}</string>
+	<key>CFBundleGetInfoString</key>
+	<string>${PRODUCT_NAME} Framework</string>
 </dict>
 </plist>

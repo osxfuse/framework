@@ -37,7 +37,6 @@
 		FF43374B0D27697A00554C02 /* GMResourceFork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = GMResourceFork.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GMDataBackedFileDelegate.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = GMDataBackedFileDelegate.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		FF948E330ECB597A0047139E /* OSXFUSE.hdoc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = OSXFUSE.hdoc; sourceTree = "<group>"; };
 		FF9CE9400EAC59C80006A9F1 /* OSXFUSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = OSXFUSE.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GMUserFileSystem.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = GMUserFileSystem.m; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
@@ -66,74 +65,57 @@
 		0867D691FE84028FC02AAC07 /* MacFUSE */ = {
 			isa = PBXGroup;
 			children = (
-				08FB77AEFE84172EC02AAC07 /* Classes */,
-				32C88DFF0371C24200C91783 /* Other Sources */,
-				089C1665FE841158C02AAC07 /* Resources */,
-				0867D69AFE84028FC02AAC07 /* External Frameworks and Libraries */,
+				08FB77AEFE84172EC02AAC07 /* OSXFUSE */,
+				0867D69AFE84028FC02AAC07 /* Frameworks */,
 				034768DFFF38A50411DB9C8B /* Products */,
 			);
 			name = MacFUSE;
 			sourceTree = "<group>";
 		};
-		0867D69AFE84028FC02AAC07 /* External Frameworks and Libraries */ = {
-			isa = PBXGroup;
-			children = (
-				1058C7B0FEA5585E11CA2CBB /* Linked Frameworks */,
-				1058C7B2FEA5585E11CA2CBB /* Other Frameworks */,
-			);
-			name = "External Frameworks and Libraries";
-			sourceTree = "<group>";
-		};
-		089C1665FE841158C02AAC07 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				8DC2EF5A0486A6940098B216 /* Info.plist */,
-			);
-			name = Resources;
-			sourceTree = "<group>";
-		};
-		08FB77AEFE84172EC02AAC07 /* Classes */ = {
-			isa = PBXGroup;
-			children = (
-				FF948E330ECB597A0047139E /* OSXFUSE.hdoc */,
-				FF9CE9400EAC59C80006A9F1 /* OSXFUSE.h */,
-				FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */,
-				FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */,
-				FF4337460D27697A00554C02 /* GMAppleDouble.h */,
-				FF4337470D27697A00554C02 /* GMAppleDouble.m */,
-				FF4337480D27697A00554C02 /* GMFinderInfo.h */,
-				FF4337490D27697A00554C02 /* GMFinderInfo.m */,
-				FF43374A0D27697A00554C02 /* GMResourceFork.h */,
-				FF43374B0D27697A00554C02 /* GMResourceFork.m */,
-				FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */,
-				FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */,
-			);
-			name = Classes;
-			sourceTree = "<group>";
-		};
-		1058C7B0FEA5585E11CA2CBB /* Linked Frameworks */ = {
+		0867D69AFE84028FC02AAC07 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				0867D69BFE84028FC02AAC07 /* Foundation.framework */,
 			);
-			name = "Linked Frameworks";
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		1058C7B2FEA5585E11CA2CBB /* Other Frameworks */ = {
+		089C1665FE841158C02AAC07 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-			);
-			name = "Other Frameworks";
-			sourceTree = "<group>";
-		};
-		32C88DFF0371C24200C91783 /* Other Sources */ = {
-			isa = PBXGroup;
-			children = (
-				28D526C70EA8342500B7CF7B /* osxfuse_objc_dtrace.d */,
-				28D526C40EA833F100B7CF7B /* GMDTrace.h */,
+				8DC2EF5A0486A6940098B216 /* Info.plist */,
 				32DBCF5E0370ADEE00C91783 /* OSXFUSE_Prefix.pch */,
 			);
-			name = "Other Sources";
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		08FB77AEFE84172EC02AAC07 /* OSXFUSE */ = {
+			isa = PBXGroup;
+			children = (
+				32C88DFF0371C24200C91783 /* DTrace */,
+				FF4337460D27697A00554C02 /* GMAppleDouble.h */,
+				FF4337470D27697A00554C02 /* GMAppleDouble.m */,
+				FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */,
+				FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */,
+				FF4337480D27697A00554C02 /* GMFinderInfo.h */,
+				FF4337490D27697A00554C02 /* GMFinderInfo.m */,
+				FF43374A0D27697A00554C02 /* GMResourceFork.h */,
+				FF43374B0D27697A00554C02 /* GMResourceFork.m */,
+				FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */,
+				FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */,
+				FF9CE9400EAC59C80006A9F1 /* OSXFUSE.h */,
+				089C1665FE841158C02AAC07 /* Supporting Files */,
+			);
+			name = OSXFUSE;
+			sourceTree = "<group>";
+		};
+		32C88DFF0371C24200C91783 /* DTrace */ = {
+			isa = PBXGroup;
+			children = (
+				28D526C40EA833F100B7CF7B /* GMDTrace.h */,
+				28D526C70EA8342500B7CF7B /* osxfuse_objc_dtrace.d */,
+			);
+			name = DTrace;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -221,7 +203,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nTEMPLATE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProjectTemplates/\"\nmkdir \"$TEMPLATE_DIR\"\ncp -R \"${SOURCE_ROOT}/ProjectTemplates/\" \"$TEMPLATE_DIR\"\nfind \"$TEMPLATE_DIR\" -type d -name '.svn' -exec rm -rf '{}' \\; > /dev/null 2>&1 || true\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${OSXFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${PRODUCT_NAME}.bridgesupport\"\n\nDEBUG_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Debug/\"\nmkdir \"$DEBUG_DIR\"\ncp -R \"${OUT_FRAMEWORK}.dSYM\" \"$DEBUG_DIR\"\n";
+			shellScript = "if [ x\"$ACTION\" != x\"build\" ]\nthen\n  exit 0\nfi\n\nGEN_BRIDGE_METADATA=/usr/bin/gen_bridge_metadata\nif [ ! -x $GEN_BRIDGE_METADATA ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\nmkdir \"$BRIDGE_DIR\"\nDYLD_LIBRARY_PATH=\"${OSXFUSE_BUILD_ROOT}/usr/local/lib/\" $GEN_BRIDGE_METADATA -f \"$OUT_FRAMEWORK\" > \"${BRIDGE_DIR}/${PRODUCT_NAME}.bridgesupport\"\n\nDEBUG_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Debug/\"\nmkdir \"$DEBUG_DIR\"\ncp -R \"${OUT_FRAMEWORK}.dSYM\" \"$DEBUG_DIR\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -246,73 +228,47 @@
 		1DEB91B208733DA50010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
+				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
-				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
-				INSTALL_PATH = /Library/Frameworks;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				ONLY_ACTIVE_ARCH = YES;
+				OSXFUSE_BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
 				OSXFUSE_DISPLAY_NAME = OSXFUSE;
-				OTHER_CFLAGS = (
-					"-D_FILE_OFFSET_BITS=64",
-					"-D_DARWIN_USE_64_BIT_INODE",
-				);
-				OTHER_LDFLAGS = (
-					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
-					"-losxfuse",
-				);
-				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
+				OSXFUSE_VERSION = 3.0.0;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 		1DEB91B308733DA50010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
+				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEPLOYMENT_POSTPROCESSING = YES;
-				FRAMEWORK_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "";
-				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
-				INSTALL_PATH = /Library/Frameworks;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				OSXFUSE_BUNDLE_IDENTIFIER_PREFIX = com.github.osxfuse;
 				OSXFUSE_DISPLAY_NAME = OSXFUSE;
-				OTHER_CFLAGS = (
-					"-D_FILE_OFFSET_BITS=64",
-					"-D_DARWIN_USE_64_BIT_INODE",
-				);
-				OTHER_LDFLAGS = (
-					"-L$(OSXFUSE_BUILD_ROOT)/usr/local/lib",
-					"-losxfuse",
-				);
-				SEPARATE_STRIP = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = "non-global";
-				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/usr/local/include/osxfuse";
+				OSXFUSE_VERSION = 3.0.0;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
 		28D525C60EA8076400B7CF7B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DYLIB_COMPATIBILITY_VERSION = 2;
 				DYLIB_CURRENT_VERSION = 2;
 				FRAMEWORK_VERSION = A;
@@ -322,45 +278,55 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = OSXFUSE_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"_FILE_OFFSET_BITS=64",
+					_DARWIN_USE_64_BIT_INODE,
+				);
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
-				OSXFUSE_BUILD_ROOT = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OSXFUSE_FRAMEWORK_BUNDLE_IDENTIFIER = "$(OSXFUSE_BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
+				OSXFUSE_LIBRARY_PREFIX = /usr/local;
 				OTHER_LDFLAGS = (
-					"-L$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/lib",
+					"-L$(OSXFUSE_LIBRARY_PREFIX)/lib",
 					"-losxfuse",
 				);
-				PREFIX = /usr/local;
 				PRODUCT_NAME = "$(OSXFUSE_DISPLAY_NAME)";
-				SDK_NAME = "$(PRODUCT_NAME)";
-				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/include/osxfuse";
+				STRIP_STYLE = debugging;
+				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_LIBRARY_PREFIX)/include/osxfuse";
 				WRAPPER_EXTENSION = framework;
-				ZERO_LINK = YES;
 			};
 			name = Debug;
 		};
 		28D525C70EA8076400B7CF7B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPLOYMENT_POSTPROCESSING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 2;
 				DYLIB_CURRENT_VERSION = 2;
 				FRAMEWORK_VERSION = A;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = OSXFUSE_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"_FILE_OFFSET_BITS=64",
+					_DARWIN_USE_64_BIT_INODE,
+				);
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "OSXFUSE_CORE_VERSION=$(OSXFUSE_BUNDLE_VERSION_LITERAL)";
 				INSTALL_PATH = /Library/Frameworks;
-				OSXFUSE_BUILD_ROOT = "";
+				OSXFUSE_FRAMEWORK_BUNDLE_IDENTIFIER = "$(OSXFUSE_BUNDLE_IDENTIFIER_PREFIX).frameworks.$(OSXFUSE_DISPLAY_NAME)";
+				OSXFUSE_LIBRARY_PREFIX = /usr/local;
 				OTHER_LDFLAGS = (
-					"-L$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/lib",
+					"-L$(OSXFUSE_LIBRARY_PREFIX)/lib",
 					"-losxfuse",
 				);
-				PREFIX = /usr/local;
 				PRODUCT_NAME = "$(OSXFUSE_DISPLAY_NAME)";
-				SDK_NAME = "$(PRODUCT_NAME)";
 				STRIPFLAGS = "";
-				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_BUILD_ROOT)/$(PREFIX)/include/osxfuse";
+				STRIP_STYLE = "non-global";
+				USER_HEADER_SEARCH_PATHS = "$(OSXFUSE_LIBRARY_PREFIX)/include/osxfuse";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Release;
