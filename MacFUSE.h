@@ -29,10 +29,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ================================================================
 //
-//  OSXFUSE.h
+//  MacFUSE.h
 //
 
-#import <OSXFUSE/GMUserFileSystem.h>
-#import <OSXFUSE/GMAppleDouble.h>
-#import <OSXFUSE/GMFinderInfo.h>
-#import <OSXFUSE/GMResourceFork.h>
+#import <MacFUSE/GMUserFileSystem.h>
+#import <MacFUSE/GMAppleDouble.h>
+#import <MacFUSE/GMFinderInfo.h>
+#import <MacFUSE/GMResourceFork.h>

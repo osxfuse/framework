@@ -29,17 +29,17 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ================================================================
 //
-//  OSXFUSE.hdoc
+//  MacFUSE.hdoc
 // 
-// Header documentation for OSXFUSE.framework.
+// Header documentation for MacFUSE.framework.
 //
 
 /*!
- * @framework OSXFUSE Framework
- * @abstract An Objective-C API for using OSXFUSE to create file systems.
- * @discussion OSXFUSE.framework is an Objective-C API for OSXFUSE that 
+ * @framework MacFUSE Framework
+ * @abstract An Objective-C API for using MacFUSE to create file systems.
+ * @discussion MacFUSE.framework is an Objective-C API for MacFUSE that 
  * enables you to easily create a file system in user space. With a little bit
- * of work, OSXFUSE can be used to display any data set as a file system that
+ * of work, MacFUSE can be used to display any data set as a file system that
  * can be viewed and manipulated in the Finder.<br>
  *
  *
@@ -52,10 +52,11 @@
  * instance to act as the file system's controller.<br>
  *
  *
- * The best way to get started with OSXFUSE.framework is to follow the tutorial,
+ * The best way to get started with MacFUSE.framework is to follow the 
+ * <a href="http://code.google.com/p/macfuse/wiki/DEVELOPER_OBJC_HOWTO">tutorial</a>,
  * which guides you through creating a simple read-only file system. It is also
  * a good idea to look at some other Objective-C examples, such as HelloFS, 
  * LoopbackFS, and the other example file systems found
- * <a href="https://github.com/osxfuse/filesystems/">here</a>.
+ * <a href="http://macfuse.googlecode.com/svn/trunk/filesystems-objc/">here</a>.
  */
  

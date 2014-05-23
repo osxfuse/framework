@@ -30,7 +30,7 @@
 // ================================================================
 //
 //  GMDataBackedFileDelegate.m
-//  OSXFUSE
+//  MacFUSE
 //
 //  Created by ted on 1/5/08.
 //
