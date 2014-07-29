@@ -209,7 +209,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$ACTION\" != \"build\" ]\nthen\n    exit 0\nfi\n\nGEN_BRIDGE_METADATA=\"/usr/bin/gen_bridge_metadata\"\nif [ ! -x \"${GEN_BRIDGE_METADATA}\" ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\n\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\n\n/bin/mkdir -p \"${BRIDGE_DIR}\"\nDYLD_LIBRARY_PATH=\"${OSXFUSE_LIBRARY_PREFIX}/lib\" \"${GEN_BRIDGE_METADATA}\" -f \"${OUT_FRAMEWORK}\" > \"${BRIDGE_DIR}/${PRODUCT_NAME}.bridgesupport\"\n";
+			shellScript = "if [ \"$ACTION\" != \"build\" ]\nthen\n    exit 0\nfi\n\nGEN_BRIDGE_METADATA=\"/usr/bin/gen_bridge_metadata\"\nif [ ! -x \"${GEN_BRIDGE_METADATA}\" ]\nthen\n  echo \"Skipping BridgeSupport due to missing gen_bridge_metadata.\"\n  exit 0\nfi\n\nOUT_FRAMEWORK=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nBRIDGE_DIR=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/BridgeSupport/\"\n\n/bin/mkdir -p \"${BRIDGE_DIR}\"\nDYLD_LIBRARY_PATH=\"${MACFUSE_LIBRARY_PREFIX}/lib\" \"${GEN_BRIDGE_METADATA}\" -f \"${OUT_FRAMEWORK}\" > \"${BRIDGE_DIR}/${PRODUCT_NAME}.bridgesupport\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
