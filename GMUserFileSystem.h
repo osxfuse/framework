@@ -284,7 +284,8 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  *   <li>NSFileSystemFreeSize
  *   <li>NSFileSystemNodes
  *   <li>NSFileSystemFreeNodes
- *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey</ul>
+ *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey
+ *   <li>kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey</ul>
  *
  * @seealso man statvfs(3)
  * @param path A path on the file system (it is safe to ignore this).
@@ -691,6 +692,13 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
  * not the file system supports extended dates such as creation and backup dates.
  */
 extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
+
+/*!
+ * @abstract Specifies support for case sensitive name.
+ * @discussion The value should be a boolean NSNumber that indicates whether or
+ * not the file system supports case sensitive names.
+ */
+extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 

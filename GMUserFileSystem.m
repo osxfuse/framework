@@ -85,6 +85,8 @@ GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kG
 /* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
 /* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
 
+GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey = @"kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey";
+
 // FinderInfo and ResourceFork keys
 GM_EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
 GM_EXPORT NSString* const kGMUserFileSystemFinderExtendedFlagsKey = @"kGMUserFileSystemFinderExtendedFlagsKey";
@@ -126,6 +128,7 @@ typedef enum {
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
   BOOL supportsExtendedTimes_;  // Delegate supports create and backup times?
   BOOL supportsSetVolumeName_;  // Delegate supports setvolname?
+  BOOL supportsCaseSensitiveNames_;
   BOOL isReadOnly_;  // Is this mounted read-only?
   id delegate_;
 }
@@ -145,6 +148,7 @@ typedef enum {
     isThreadSafe_ = isThreadSafe;
     supportsExtendedTimes_ = NO;
     supportsSetVolumeName_ = NO;
+    supportsCaseSensitiveNames_ = YES;
     isReadOnly_ = NO;
     [self setDelegate:delegate];
 
@@ -171,6 +175,8 @@ typedef enum {
 - (void)setSupportsExtendedTimes:(BOOL)val { supportsExtendedTimes_ = val; }
 - (BOOL)supportsSetVolumeName { return supportsSetVolumeName_; }
 - (void)setSupportsSetVolumeName:(BOOL)val { supportsSetVolumeName_ = val; }
+- (BOOL)supportsCaseSensitiveNames { return supportsCaseSensitiveNames_; }
+- (void)setSupportsCaseSensitiveNames:(BOOL)val { supportsCaseSensitiveNames_ = val; }
 - (BOOL)isTiger { return isTiger_; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (BOOL)isReadOnly { return isReadOnly_; }
@@ -330,6 +336,9 @@ typedef enum {
 - (BOOL)enableSetVolumeName {
   return [internal_ supportsSetVolumeName];
 }
+- (BOOL)supportsCaseSensitiveNames {
+  return [internal_ supportsCaseSensitiveNames];
+}
 
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options {
@@ -444,7 +453,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsSetVolumeNameKey];
     if (supports && [supports boolValue]) {
       [internal_ setSupportsSetVolumeName:YES];
-    }    
+    }
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey];
+    if (supports && ![supports boolValue]) {
+      [internal_ setSupportsCaseSensitiveNames:NO];
+    }
   }
   
   // The mount point won't actually show up until this winds its way
@@ -2079,6 +2092,11 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
 #if 0  // TODO: Remove #if 0 if/when setvolname is supported.
   if ([fs enableSetVolumeName]) {
     FUSE_ENABLE_SETVOLNAME(conn);
+  }
+#endif
+#ifdef FUSE_ENABLE_CASE_INSENSITIVE
+  if (![fs supportsCaseSensitiveNames]) {
+    FUSE_ENABLE_CASE_INSENSITIVE(conn);
   }
 #endif
 
