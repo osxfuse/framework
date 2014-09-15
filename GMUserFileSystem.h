@@ -288,6 +288,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  *   <li>kGMUserFileSystemVolumeSupportsExtendedDatesKey
  *   <li>kGMUserFileSystemVolumeMaxFilenameLengthKey
  *   <li>kGMUserFileSystemVolumeFileSystemBlockSizeKey</ul>
+ *   <li>kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey</ul>
  *
  * @seealso man statvfs(3)
  * @param path A path on the file system (it is safe to ignore this).
@@ -715,6 +716,13 @@ extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey;
  * in bytes. If omitted 4096 bytes is assumed.
  */
 extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
+
+/*!
+ * @abstract Specifies support for case sensitive name.
+ * @discussion The value should be a boolean NSNumber that indicates whether or
+ * not the file system supports case sensitive names.
+ */
+extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
