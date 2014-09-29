@@ -98,30 +98,6 @@ GM_EXPORT @interface GMFinderInfo : NSObject {
  */
 - (NSData *)data;
 
-// -- Deprecated Convenience Methods --
-
-/*! 
- * @abstract NSData for a FinderInfo with the given flags.
- * @param flags OR'd set of FinderInfo flags.
- * @result NSData of the FinderInfo.
- * @deprecated This method is deprecated.
- */
-+ (NSData *)finderInfoWithFinderFlags:(UInt16)flags;
-
-// Suitable only for files (not directories), this version allows you to
-// specify type and creator four-char-codes in addition to the flags.
-/*! 
- * @abstract NSData for a FinderInfo with the given flags, type, and creator.
- * @param flags OR'd set of FinderInfo flags.
- * @param typeCode The four-char type code.
- * @param creatorCode The four-char creator code.
- * @result NSData of the FinderInfo.
- * @deprecated This method is deprecated.
- */
-+ (NSData *)finderInfoWithFinderFlags:(UInt16)flags
-                             typeCode:(OSType)typeCode
-                          creatorCode:(OSType)creatorCode;
-
 @end
 
 #undef GM_EXPORT

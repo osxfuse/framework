@@ -114,20 +114,4 @@ typedef struct {
   return [NSData dataWithBytes:&info length:sizeof(info)];    
 }
 
-+ (NSData *)finderInfoWithFinderFlags:(UInt16)flags {
-  return [GMFinderInfo finderInfoWithFinderFlags:flags
-                                        typeCode:0
-                                     creatorCode:0];
-}
-
-+ (NSData *)finderInfoWithFinderFlags:(UInt16)flags
-                             typeCode:(OSType)typeCode
-                          creatorCode:(OSType)creatorCode {
-  GMFinderInfo* info = [GMFinderInfo finderInfo];
-  [info setFlags:flags];
-  [info setTypeCode:typeCode];
-  [info setCreatorCode:creatorCode];
-  return [info data];
-}
-
 @end
