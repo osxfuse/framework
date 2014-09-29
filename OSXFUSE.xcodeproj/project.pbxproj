@@ -7,12 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		28D525B50EA8076400B7CF7B /* GMAppleDouble.h in Headers */ = {isa = PBXBuildFile; fileRef = FF4337460D27697A00554C02 /* GMAppleDouble.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		28D525B60EA8076400B7CF7B /* GMFinderInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = FF4337480D27697A00554C02 /* GMFinderInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		28D525B70EA8076400B7CF7B /* GMResourceFork.h in Headers */ = {isa = PBXBuildFile; fileRef = FF43374A0D27697A00554C02 /* GMResourceFork.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		28D525B80EA8076400B7CF7B /* GMUserFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = FFC1BF780D2D81D5009D8847 /* GMUserFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		28D525B90EA8076400B7CF7B /* GMDataBackedFileDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */; };
-		28D525BD0EA8076400B7CF7B /* GMAppleDouble.m in Sources */ = {isa = PBXBuildFile; fileRef = FF4337470D27697A00554C02 /* GMAppleDouble.m */; };
 		28D525BE0EA8076400B7CF7B /* GMFinderInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = FF4337490D27697A00554C02 /* GMFinderInfo.m */; };
 		28D525BF0EA8076400B7CF7B /* GMResourceFork.m in Sources */ = {isa = PBXBuildFile; fileRef = FF43374B0D27697A00554C02 /* GMResourceFork.m */; };
 		28D525C00EA8076400B7CF7B /* GMUserFileSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = FFC1BF790D2D81D5009D8847 /* GMUserFileSystem.m */; };
@@ -29,8 +27,6 @@
 		28D526C70EA8342500B7CF7B /* osxfuse_objc_dtrace.d */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.dtrace; path = osxfuse_objc_dtrace.d; sourceTree = "<group>"; };
 		32DBCF5E0370ADEE00C91783 /* OSXFUSE_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = OSXFUSE_Prefix.pch; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		8DC2EF5A0486A6940098B216 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		FF4337460D27697A00554C02 /* GMAppleDouble.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GMAppleDouble.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FF4337470D27697A00554C02 /* GMAppleDouble.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = GMAppleDouble.m; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		FF4337480D27697A00554C02 /* GMFinderInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GMFinderInfo.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FF4337490D27697A00554C02 /* GMFinderInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = GMFinderInfo.m; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		FF43374A0D27697A00554C02 /* GMResourceFork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GMResourceFork.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -93,8 +89,6 @@
 			isa = PBXGroup;
 			children = (
 				32C88DFF0371C24200C91783 /* DTrace */,
-				FF4337460D27697A00554C02 /* GMAppleDouble.h */,
-				FF4337470D27697A00554C02 /* GMAppleDouble.m */,
 				FF6C40200D300D7E00E51DD2 /* GMDataBackedFileDelegate.h */,
 				FF6C40210D300D7E00E51DD2 /* GMDataBackedFileDelegate.m */,
 				FF4337480D27697A00554C02 /* GMFinderInfo.h */,
@@ -125,7 +119,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28D525B50EA8076400B7CF7B /* GMAppleDouble.h in Headers */,
 				28D525B60EA8076400B7CF7B /* GMFinderInfo.h in Headers */,
 				28D525B70EA8076400B7CF7B /* GMResourceFork.h in Headers */,
 				28D525B80EA8076400B7CF7B /* GMUserFileSystem.h in Headers */,
@@ -213,7 +206,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28D525BD0EA8076400B7CF7B /* GMAppleDouble.m in Sources */,
 				28D525BE0EA8076400B7CF7B /* GMFinderInfo.m in Sources */,
 				28D525BF0EA8076400B7CF7B /* GMResourceFork.m in Sources */,
 				28D525C00EA8076400B7CF7B /* GMUserFileSystem.m in Sources */,

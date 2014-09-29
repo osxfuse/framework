@@ -53,7 +53,6 @@
 #include <sys/utsname.h>
 
 #import <Foundation/Foundation.h>
-#import "GMAppleDouble.h"
 #import "GMFinderInfo.h"
 #import "GMResourceFork.h"
 #import "GMDataBackedFileDelegate.h"

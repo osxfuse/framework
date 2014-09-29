@@ -33,6 +33,5 @@
 //
 
 #import <OSXFUSE/GMUserFileSystem.h>
-#import <OSXFUSE/GMAppleDouble.h>
 #import <OSXFUSE/GMFinderInfo.h>
 #import <OSXFUSE/GMResourceFork.h>
