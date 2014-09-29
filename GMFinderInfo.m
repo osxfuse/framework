@@ -81,7 +81,8 @@ typedef struct {
 }
 
 - (id)init {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     flags_ = 0;
     extendedFlags_ = 0;
     typeCode_ = 0;

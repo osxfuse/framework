@@ -126,7 +126,6 @@ typedef enum {
 @interface GMUserFileSystemInternal : NSObject {
   NSString* mountPath_;
   GMUserFileSystemStatus status_;
-  BOOL isTiger_;                  // Are we running on Tiger?
   BOOL shouldCheckForResource_;   // Try to handle FinderInfo/Resource Forks?
   BOOL isThreadSafe_;  // Is the delegate thread-safe?
   BOOL supportsExtendedTimes_;  // Delegate supports create and backup times?
@@ -146,7 +145,8 @@ typedef enum {
 }
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
     supportsExtendedTimes_ = NO;
@@ -154,10 +154,6 @@ typedef enum {
     supportsCaseSensitiveNames_ = YES;
     isReadOnly_ = NO;
     [self setDelegate:delegate];
-
-    // Version 10.4 requires ._ to appear in directory listings.
-    long version = fuse_os_version_major_np();
-    isTiger_ = (version < 9);
   }
   return self;
 }
@@ -180,7 +176,6 @@ typedef enum {
 - (void)setSupportsSetVolumeName:(BOOL)val { supportsSetVolumeName_ = val; }
 - (BOOL)supportsCaseSensitiveNames { return supportsCaseSensitiveNames_; }
 - (void)setSupportsCaseSensitiveNames:(BOOL)val { supportsCaseSensitiveNames_ = val; }
-- (BOOL)isTiger { return isTiger_; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (BOOL)isReadOnly { return isReadOnly_; }
 - (void)setIsReadOnly:(BOOL)val { isReadOnly_ = val; }
@@ -212,10 +207,8 @@ typedef enum {
 
 - (BOOL)hasCustomIconAtPath:(NSString *)path;
 - (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath;
-- (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath;
 - (NSData *)finderDataForAttributes:(NSDictionary *)attributes;
 - (NSData *)resourceDataForAttributes:(NSDictionary *)attributes;
-- (NSData *)appleDoubleContentsAtPath:(NSString *)path;
 
 - (NSDictionary *)defaultAttributesOfItemAtPath:(NSString *)path 
                                        userData:userData
@@ -240,7 +233,8 @@ typedef enum {
 }
 
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     internal_ = [[GMUserFileSystemInternal alloc] initWithDelegate:delegate
                                                       isThreadSafe:isThreadSafe];
   }
@@ -510,19 +504,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
-- (BOOL)isAppleDoubleAtPath:(NSString *)path realPath:(NSString **)realPath {
-  NSString* name = [path lastPathComponent];
-  if ([name hasPrefix:@"._"]) {
-    if (realPath) {
-      name = [name substringFromIndex:2];
-      *realPath = [path stringByDeletingLastPathComponent];
-      *realPath = [*realPath stringByAppendingPathComponent:name];
-    }
-    return YES;
-  }
-  return NO;
-}
-
 // If the given attribs dictionary contains any FinderInfo attributes then 
 // returns NSData for FinderInfo; otherwise returns nil.
 - (NSData *)finderDataForAttributes:(NSDictionary *)attribs {
@@ -590,36 +571,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                          data:data];
   }
   return attributeFound ? [fork data] : nil;
-}
-
-// Returns the AppleDouble file contents, if any, for the given path. You should
-// call this with the realPath out-param from a call to isAppleDoubleAtPath:.
-//
-// On 10.5 and (hopefully) above, the Finder will end up using the extended
-// attributes and so we won't need to serve ._ files. 
-- (NSData *)appleDoubleContentsAtPath:(NSString *)path {
-  NSDictionary* finderAttributes = [self finderAttributesAtPath:path];
-  NSData* finderData = [self finderDataForAttributes:finderAttributes];
- 
-  // We treat the ._ for a directory and it's ._Icon\r file the same. This means
-  // that we'll put extra resource-fork information in directory's ._ file even 
-  // though it isn't needed. It's worth it given that it only affects 10.4.
-  [self isDirectoryIconAtPath:path dirPath:&path];
-
-  NSDictionary* resourceAttributes = [self resourceAttributesAtPath:path];
-  NSData* resourceData = [self resourceDataForAttributes:resourceAttributes];
-  if (finderData != nil || resourceData != nil) {
-    GMAppleDouble* doubleFile = [GMAppleDouble appleDouble];
-    if (finderData) {
-      [doubleFile addEntryWithID:DoubleEntryFinderInfo data:finderData];
-    }
-    if (resourceData) {
-      [doubleFile addEntryWithID:DoubleEntryResourceFork 
-                            data:resourceData];
-    }
-    return [doubleFile data];
-  }
-  return nil;
 }
 
 #pragma mark Internal Stat Operations
@@ -975,13 +926,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       data = [NSData data];  // The Icon\r file is empty.
     }
 
-    // (Tiger Only): Maybe it is an AppleDouble file that we handle?
-    if ([internal_ isTiger]) {
-      NSString* realPath;
-      if ([self isAppleDoubleAtPath:path realPath:&realPath]) {
-        data = [self appleDoubleContentsAtPath:realPath];
-      }
-    }
     if (data != nil) {
       if ((mode & O_ACCMODE) == O_RDONLY) {
         *userData = [GMDataBackedFileDelegate fileDelegateWithData:data];
@@ -1117,34 +1061,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else if ([path isEqualToString:@"/"]) {
     contents = [NSArray array];  // Give them an empty root directory for free.
   }
-  if (contents != nil && 
-      [internal_ isTiger] &&
-      [internal_ shouldCheckForResource]) {
-    // Note: Tiger (10.4) requires that the ._ file are explicitly listed in 
-    // the directory contents if you want a custom icon to show up. If they
-    // don't provide their own ._ file and they have a custom icon, then we'll
-    // add the ._ file to the directory contents.
-    NSMutableSet* fullContents = [NSMutableSet setWithArray:contents];
-    for (int i = 0; i < [contents count]; ++i) {
-      NSString* name = [contents objectAtIndex:i];
-      if ([name hasPrefix:@"._"]) {
-        continue;  // Skip over any AppleDouble that they provide.
-      }
-      NSString* doubleName = [NSString stringWithFormat:@"._%@", name];
-      if ([fullContents containsObject:doubleName]) {
-        continue;  // They provided their own AppleDouble for 'name'.
-      }
-      NSString* pathPlusName = [path stringByAppendingPathComponent:name];
-      if ([self hasCustomIconAtPath:pathPlusName]) {
-        [fullContents addObject:doubleName];
-      }
-    }
-    if ([self hasCustomIconAtPath:path]) {
-      [fullContents addObject:@"Icon\r"];
-      [fullContents addObject:@"._Icon\r"];
-    }
-    contents = [fullContents allObjects];
-  }
   return contents;
 }
 
@@ -1189,7 +1105,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   
   id delegate = [internal_ delegate];
-  BOOL isAppleDouble = NO;   // May only be set to YES on Tiger.
   BOOL isDirectoryIcon = NO;
 
   // The delegate can override any of the above defaults by implementing the
@@ -1210,18 +1125,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // Maybe check to see if this is a special file that we should handle. If they
   // wanted to handle it, then they would have given us back customAttribs.
   if (!customAttribs && [internal_ shouldCheckForResource]) {
-    // (Tiger-Only): If this is an AppleDouble file then we update the path to
-    // be the original representative of that double file; i.e. /._baz -> /baz.
-    if ([internal_ isTiger]) {
-      isAppleDouble = [self isAppleDoubleAtPath:path realPath:&path];
-    }
-    
     // If the maybe-fixed-up path is a directoryIcon, we'll modify the path to
     // refer to the parent directory and note that we are a directory icon.
     isDirectoryIcon = [self isDirectoryIconAtPath:path dirPath:&path];
     
     // Maybe we'll try again to get custom attribs on the real path.
-    if (supportsAttributesSelector && (isAppleDouble || isDirectoryIcon)) {
+    if (supportsAttributesSelector && isDirectoryIcon) {
       customAttribs = [self attributesOfItemAtPath:path 
                                           userData:userData
                                              error:error];
@@ -1239,24 +1148,10 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   
   // If this is a directory Icon\r then it is an empty file and we're done.
-  if (isDirectoryIcon && !isAppleDouble) {
+  if (isDirectoryIcon) {
     if ([self hasCustomIconAtPath:path]) {
       [attributes setObject:NSFileTypeRegular forKey:NSFileType];
       [attributes setObject:[NSNumber numberWithLongLong:0] forKey:NSFileSize];
-      return attributes;
-    }
-    *error = [GMUserFileSystem errorWithCode:ENOENT];
-    return nil;
-  }
-  
-  // If this is a ._ then we'll need to compute its size and we're done. This
-  // will never be true on post-Tiger.
-  if (isAppleDouble) {
-    NSData* data = [self appleDoubleContentsAtPath:path];
-    if (data != nil) {
-      [attributes setObject:NSFileTypeRegular forKey:NSFileType];
-      [attributes setObject:[NSNumber numberWithLongLong:[data length]]
-                     forKey:NSFileSize];
       return attributes;
     }
     *error = [GMUserFileSystem errorWithCode:ENOENT];
@@ -1408,8 +1303,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                         error:error];
   }
 
-  // On 10.5+ we might supply FinderInfo/ResourceFork as xattr for them.
-  if (!data && [internal_ shouldCheckForResource] && ![internal_ isTiger]) {
+  if (!data && [internal_ shouldCheckForResource]) {
     if ([name isEqualToString:@"com.apple.FinderInfo"]) {
       NSDictionary* finderAttributes = [self finderAttributesAtPath:path];
       data = [self finderDataForAttributes:finderAttributes];

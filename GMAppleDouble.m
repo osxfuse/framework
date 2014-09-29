@@ -63,7 +63,8 @@ typedef struct {
 
 - (id)initWithEntryID:(GMAppleDoubleEntryID)entryID
                  data:(NSData *)data {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     if (entryID == DoubleEntryInvalid || data == nil) {
       [self release];
       return nil;
@@ -103,7 +104,8 @@ typedef struct {
 }
 
 - (id)init {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     entries_ = [[NSMutableArray alloc] init];
   }
   return self;  

@@ -119,7 +119,8 @@ typedef struct {
              resID:(ResID)resID 
               name:(NSString *)name
               data:(NSData *)data {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     if (data == nil) {
       [self release];
       return nil;
@@ -160,7 +161,8 @@ typedef struct {
 }
 
 - (id)init {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     resourcesByType_ = [[NSMutableDictionary alloc] init];
   }
   return self;    

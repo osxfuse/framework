@@ -43,7 +43,8 @@
 }
 
 - (id)initWithData:(NSData *)data {
-  if ((self = [super init])) {
+  self = [super init];
+  if (self) {
     data_ = [data retain];
   }
   return self;
@@ -83,8 +84,7 @@
 }
 
 - (id)initWithMutableData:(NSMutableData *)data {
-  if ((self = [super initWithData:data])) {
-  }
+  self = [super initWithData:data];
   return self;
 }
 
