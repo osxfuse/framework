@@ -189,83 +189,9 @@ typedef enum {
   delegate_ = delegate;
   shouldCheckForResource_ =
     [delegate_ respondsToSelector:@selector(finderAttributesAtPath:error:)] ||
-    [delegate_ respondsToSelector:@selector(resourceAttributesAtPath:error:)] ||
-    [delegate_ respondsToSelector:@selector(finderFlagsAtPath:)] ||
-    [delegate_ respondsToSelector:@selector(iconDataAtPath:)]    ||
-    [delegate_ respondsToSelector:@selector(URLOfWeblocAtPath:)];
-  
-  // Check for deprecated methods.
-  SEL deprecatedMethods[] = {
-    @selector(valueOfExtendedAttribute:ofItemAtPath:error:),
-    @selector(setExtendedAttribute:ofItemAtPath:value:flags:error:),
-    @selector(finderFlagsAtPath:),
-    @selector(iconDataAtPath:),
-    @selector(URLOfWeblocAtPath:),
-    @selector(truncateFileAtPath:offset:error:),
-    @selector(attributesOfItemAtPath:error:),
-    @selector(setAttributes:ofItemAtPath:error:),
-    @selector(openFileAtPath:mode:fileDelegate:error:),
-    @selector(createFileAtPath:attributes:fileDelegate:error:),
-    @selector(releaseFileAtPath:fileDelegate:),
-    @selector(readFileAtPath:fileDelegate:buffer:size:offset:error:),
-    @selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:),
-  };
-  int i;
-  for (i = 0; i < sizeof(deprecatedMethods)/sizeof(deprecatedMethods[0]); ++i) {
-    SEL sel = deprecatedMethods[i];
-    if ([delegate_ respondsToSelector:sel]) {
-      NSLog(@"*** WARNING: GMUserFileSystem delegate implements deprecated "
-            @"selector: %@", NSStringFromSelector(sel));
-    }
-  }
+    [delegate_ respondsToSelector:@selector(resourceAttributesAtPath:error:)];
 }
 
-@end
-
-// Deprecated delegate methods that we still support for backward compatibility
-// with previously compiled file systems. This will be actively trimmed as 
-// new releases occur.
-@interface NSObject (GMUserFileSystemDeprecated)
-- (NSData *)valueOfExtendedAttribute:(NSString *)name
-                        ofItemAtPath:(NSString *)path
-                               error:(NSError **)error;
-- (BOOL)setExtendedAttribute:(NSString *)name
-                ofItemAtPath:(NSString *)path
-                       value:(NSData *)value
-                       flags:(int)flags
-                       error:(NSError **)error;
-- (UInt16)finderFlagsAtPath:(NSString *)path;
-- (NSData *)iconDataAtPath:(NSString *)path;
-- (NSURL *)URLOfWeblocAtPath:(NSString *)path;
-- (BOOL)truncateFileAtPath:(NSString *)path 
-                    offset:(off_t)offset 
-                     error:(NSError **)error;
-- (NSDictionary *)attributesOfItemAtPath:(NSString *)path
-                                   error:(NSError **)error;
-- (BOOL)setAttributes:(NSDictionary *)attributes 
-         ofItemAtPath:(NSString *)path
-                error:(NSError **)error;
-- (BOOL)openFileAtPath:(NSString *)path 
-                  mode:(int)mode
-          fileDelegate:(id *)fileDelegate
-                 error:(NSError **)error;
-- (BOOL)createFileAtPath:(NSString *)path 
-              attributes:(NSDictionary *)attributes
-            fileDelegate:(id *)fileDelegate
-                   error:(NSError **)error;
-- (void)releaseFileAtPath:(NSString *)path fileDelegate:(id)fileDelegate;
-- (int)readFileAtPath:(NSString *)path 
-         fileDelegate:(id)fileDelegate
-               buffer:(char *)buffer 
-                 size:(size_t)size 
-               offset:(off_t)offset
-                error:(NSError **)error;
-- (int)writeFileAtPath:(NSString *)path 
-          fileDelegate:(id)fileDelegate 
-                buffer:(const char *)buffer
-                  size:(size_t)size 
-                offset:(off_t)offset
-                 error:(NSError **)error;
 @end
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
@@ -536,11 +462,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       return dict;
     }
     // Fall through and create dictionary based on flags if necessary.
-  } else if ([delegate respondsToSelector:@selector(finderFlagsAtPath:)]) {
-    flags |= [delegate finderFlagsAtPath:path];
-  } else if ([delegate respondsToSelector:@selector(iconDataAtPath:)] &&
-             [delegate iconDataAtPath:path] != nil) {
-    flags |= kHasCustomIcon;
   }
   if (flags != 0) {
     return [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:flags]
@@ -559,27 +480,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     NSError* error = nil;
     return [delegate resourceAttributesAtPath:path error:&error];
   }
-
-  // Support for deprecated selectors.
-  NSURL* url = nil;
-  if ([path hasSuffix:@".webloc"] &&
-      [delegate respondsToSelector:@selector(URLOfWeblocAtPath:)]) {
-    url = [delegate URLOfWeblocAtPath:path];
-  }
-  NSData* imageData = nil;
-  if ([delegate respondsToSelector:@selector(iconDataAtPath:)]) {
-    imageData = [delegate iconDataAtPath:path];
-  }
-  if (imageData || url) {
-    NSMutableDictionary* dict = [NSMutableDictionary dictionary];
-    if (imageData) {
-      [dict setObject:imageData forKey:kGMUserFileSystemCustomIconDataKey];
-    }
-    if (url) {
-      [dict setObject:url forKey:kGMUserFileSystemWeblocURLKey];
-    }
-    return dict;
-  }
   return nil;
 }
 
@@ -597,7 +497,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     }
   }
   return NO;
-  }
+}
 
 - (BOOL)isDirectoryIconAtPath:(NSString *)path dirPath:(NSString **)dirPath {
   NSString* name = [path lastPathComponent];
@@ -970,10 +870,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:userData:error:)]) {
     return [[internal_ delegate] createFileAtPath:path attributes:attributes 
                                          userData:userData error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:fileDelegate:error:)]) {
-    // NOTE: For backward compatibility with version 1.7 and prior.
-    return [[internal_ delegate] createFileAtPath:path attributes:attributes 
-                                     fileDelegate:userData error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -1068,14 +964,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                            error:error]) {
       return YES;  // They handled it.
     }
-  } else if ([delegate respondsToSelector:@selector(openFileAtPath:mode:fileDelegate:error:)]) {
-    if ([delegate openFileAtPath:path 
-                            mode:mode 
-                    fileDelegate:userData
-                           error:error]) {
-      // NOTE: For backward compatibility with version 1.7 and prior.
-      return YES;  // They handled it.
-    }
   }
 
   // Still unable to open the file; maybe it is an Icon\r or AppleDouble?
@@ -1125,9 +1013,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:userData:)]) {
     [[internal_ delegate] releaseFileAtPath:path userData:userData];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(releaseFileAtPath:fileDelegate:)]) {
-    // NOTE: For backward compatibility with version 1.7 and prior.
-    [[internal_ delegate] releaseFileAtPath:path fileDelegate:userData];
   }
 }
 
@@ -1150,14 +1035,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:userData:buffer:size:offset:error:)]) {
     return [[internal_ delegate] readFileAtPath:path
                                        userData:userData
-                                         buffer:buffer
-                                           size:size
-                                         offset:offset
-                                          error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(readFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
-    // NOTE: For backward compatibility with version 1.7 and prior.
-    return [[internal_ delegate] readFileAtPath:path
-                                   fileDelegate:userData
                                          buffer:buffer
                                            size:size
                                          offset:offset
@@ -1190,14 +1067,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                             size:size
                                           offset:offset
                                            error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(writeFileAtPath:fileDelegate:buffer:size:offset:error:)]) {
-    // NOTE: For backward compatibility with version 1.7 and prior.
-    return [[internal_ delegate] writeFileAtPath:path
-                                    fileDelegate:userData
-                                          buffer:buffer
-                                            size:size
-                                          offset:offset
-                                           error:error];
   }
   *error = [GMUserFileSystem errorWithCode:EACCES];
   return -1; 
@@ -1213,11 +1082,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       [fileDelegate respondsToSelector:@selector(truncateToOffset:error:)]) {
     *handled = YES;
     return [fileDelegate truncateToOffset:offset error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(truncateFileAtPath:offset:error:)]) {
-    *handled = YES;
-    return [[internal_ delegate] truncateFileAtPath:path 
-                                             offset:offset 
-                                              error:error];
   }
   *handled = NO;
   return NO;
@@ -1288,8 +1152,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)supportsAttributesOfItemAtPath {
   id delegate = [internal_ delegate];
-  return [delegate respondsToSelector:@selector(attributesOfItemAtPath:userData:error:)] ||
-         [delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)];
+  return [delegate respondsToSelector:@selector(attributesOfItemAtPath:userData:error:)];
 }
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
@@ -1304,8 +1167,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   id delegate = [internal_ delegate];
   if ([delegate respondsToSelector:@selector(attributesOfItemAtPath:userData:error:)]) {
     return [delegate attributesOfItemAtPath:path userData:userData error:error];
-  } else if ([delegate respondsToSelector:@selector(attributesOfItemAtPath:error:)]) {
-    return [delegate attributesOfItemAtPath:path error:error];
   }
   return nil;
 }
@@ -1491,8 +1352,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   
   if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:userData:error:)]) {
     return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path userData:userData error:error];
-  } else if ([[internal_ delegate] respondsToSelector:@selector(setAttributes:ofItemAtPath:error:)]) {
-    return [[internal_ delegate] setAttributes:attributes ofItemAtPath:path error:error];    
   }
   *error = [GMUserFileSystem errorWithCode:ENODEV];
   return NO;
@@ -1547,12 +1406,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                  ofItemAtPath:path 
                                      position:position 
                                         error:error];
-  } else if ([delegate respondsToSelector:@selector(valueOfExtendedAttribute:ofItemAtPath:error:)]) {
-    // NOTE: For backward compatibility with version 1.5 and prior.
-    xattrSupported = YES;
-    data = [delegate valueOfExtendedAttribute:name 
-                                 ofItemAtPath:path 
-                                        error:error];    
   }
 
   // On 10.5+ we might supply FinderInfo/ResourceFork as xattr for them.
@@ -1602,14 +1455,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
                                  position:position
                                   options:options
                                     error:error]; 
-  } else if ([delegate respondsToSelector:@selector(setExtendedAttribute:ofItemAtPath:value:flags:error:)]) {
-    // NOTE: For backward compatibility with version 1.5 and prior.
-    return [delegate setExtendedAttribute:name 
-                             ofItemAtPath:path 
-                                    value:value
-                                    flags:options
-                                    error:error];
-  }  
+  }
   *error = [GMUserFileSystem errorWithCode:ENOTSUP];
   return NO;
 }
