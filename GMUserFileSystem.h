@@ -132,7 +132,7 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  *  <li>For a daemon: shouldForeground=NO, detachNewThread=NO
  *  <li>For debug output: shouldForeground=YES, detachNewThread=NO
  *  <li>For a daemon+runloop:  shouldForeground=NO, detachNewThread=YES<br>
- *    - NOTE: I've never tried daemon+runloop; maybe it doesn't make sense</ul>
+ *    - Note: I've never tried daemon+runloop; maybe it doesn't make sense</ul>
  * @param mountPath The path to mount on, e.g. /Volumes/MyFileSystem
  * @param options The set of mount time options to use.
  * @param shouldForeground Should the file system thread remain foreground rather 
@@ -415,6 +415,32 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                   size:(size_t)size 
                 offset:(off_t)offset
                  error:(NSError **)error;
+
+/*!
+ * @abstract Preallocates space for the open file at the specified path.
+ * @discussion Preallocates file storage space. Upon success, the space that is
+ * allocated can be the same size or larger than the space requested and
+ * subsequent writes to bytes in the specified range are guaranteed not to fail
+ * because of lack of disk space.
+ *
+ * If userData was provided in the corresponding openFileAtPath: or
+ * createFileAtPath: call then it will be passed in.
+ *
+ * @seealso man fcntl(2)
+ * @param path The path to the file.
+ * @param userData The userData corresponding to this open file or nil.
+ * @param options The preallocate options. See <sys/vnode.h>.
+ * @param offset The start of the region.
+ * @param length The size of the region.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the space was preallocated successfully.
+ */
+- (BOOL)preallocateFileAtPath:(NSString *)path
+                     userData:(id)userData
+                      options:(int)options
+                       offset:(off_t)offset
+                       length:(off_t)length
+                        error:(NSError **)error;
 
 /*!
  * @abstract Atomically exchanges data between files.
