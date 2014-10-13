@@ -38,20 +38,20 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 
 /*!
- * @framework OSXFUSE Framework
- * @abstract An Objective-C API for using OSXFUSE to create file systems.
- * @discussion OSXFUSE.framework is an Objective-C API for OSXFUSE that 
- * enables you to easily create a file system in user space. With a little bit
- * of work, OSXFUSE can be used to display any data set as a file system that
- * can be viewed and manipulated in the Finder.<br>
+ * @framework FUSE for OS X Framework
+ * @abstract An Objective-C API for creating user space file systems.
+ * @discussion OSXFUSE.framework is an Objective-C API that enables you to
+ * easily create a file system in user space. With a little bit
+ * of work, FUSE for OS X can be used to display any data set as a file system
+ * that can be viewed and manipulated in the Finder.<br>
  *
  *
  * Building a working file system involves creating a class that implements a 
  * subset of the 
- * <a href="GMUserFileSystem/Categories/NSObject_GMUserFileSystemOperations_/index.html">
+ * <a href="GMUserFileSystem_h/Categories/NSObject_GMUserFileSystemOperations_/index.html">
  * GMUserFileSystemOperations</a> informal protocol methods to 
  * serve your file system's data, and using a 
- * <a href="GMUserFileSystem/Classes/GMUserFileSystem_/index.html">GMUserFileSystem</a>
+ * <a href="GMUserFileSystem_h/Classes/GMUserFileSystem/index.html">GMUserFileSystem</a>
  * instance to act as the file system's controller.<br>
  *
  *
