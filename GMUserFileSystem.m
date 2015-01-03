@@ -860,13 +860,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
 #endif
 
-  // Size for regular files.
-  // TODO: Revisit size for directories.
-  if (![fileType isEqualToString:NSFileTypeDirectory]) {
-    NSNumber* size = [attributes objectForKey:NSFileSize];
-    if (size) {
-      stbuf->st_size = [size longLongValue];
-    }
+  NSNumber* size = [attributes objectForKey:NSFileSize];
+  if (size) {
+    stbuf->st_size = [size longLongValue];
   }
 
   // Set the number of blocks used so that Finder will display size on disk 
