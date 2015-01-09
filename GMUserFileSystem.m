@@ -84,6 +84,7 @@ GM_EXPORT NSString* const kGMUserFileSystemFileAccessDateKey = @"kGMUserFileSyst
 GM_EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileSizeInBlocksKey = @"kGMUserFileSystemFileSizeInBlocksKey";
+GM_EXPORT NSString* const kGMUserFileSystemFileOptimalIOSizeKey = @"kGMUserFileSystemFileOptimalIOSizeKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey = @"kGMUserFileSystemVolumeMaxFilenameLengthKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey = @"kGMUserFileSystemVolumeFileSystemBlockSizeKey";
@@ -745,6 +746,12 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     if (stbuf->st_size % 512) {
       ++(stbuf->st_blocks);
     }
+  }
+
+  // Optimal file I/O size
+  NSNumber *ioSize = [attributes objectForKey:kGMUserFileSystemFileOptimalIOSizeKey];
+  if (ioSize) {
+    stbuf->st_blksize = [ioSize intValue];
   }
 
   return YES;  

@@ -687,7 +687,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 
 /*! 
  * @abstract File flags.
- * @discussion The value should be an NSNumber* with uint32 value that is the
+ * @discussion The value should be an NSNumber with uint32 value that is the
  * file st_flags (man 2 stat). 
  */
 extern NSString* const kGMUserFileSystemFileFlagsKey;
@@ -707,17 +707,25 @@ extern NSString* const kGMUserFileSystemFileAccessDateKey;
 extern NSString* const kGMUserFileSystemFileChangeDateKey;
 
 /*! 
- * @abstract  For file backup date. 
+ * @abstract For file backup date.
  * @discussion The value should be an NSDate that is the backup date. 
  */
 extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
 /*! 
- * @abstract  For file size in 512 byte blocks. 
+ * @abstract For file size in 512 byte blocks.
  * @discussion The value should be an NSNumber that is the file size in 512 byte 
  * blocks. It is ignored unless the file system is mounted with option \@"sparse".
  */
 extern NSString* const kGMUserFileSystemFileSizeInBlocksKey;
+
+/*!
+ * @abstract Optimal file I/O size.
+ * @discussion The value should be an NSNumber with blksize_t value that is the
+ * file st_blksize (man 2 stat). If unset or zero the global I/O size will be
+ * used, which can be specified at mount-time (option iosize).
+ */
+extern NSString* const kGMUserFileSystemFileOptimalIOSizeKey;
 
 #pragma mark Additional Volume Attribute Keys
 
