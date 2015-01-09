@@ -824,7 +824,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     stbuf->st_ctimespec.tv_nsec = t_nsec;
   }
 
-#if __DARWIN_64_BIT_INO_T
+#ifdef _DARWIN_USE_64_BIT_INODE
   NSDate* bdate = [attributes objectForKey:NSFileCreationDate];
   if (bdate) {
     const double seconds_dp = [bdate timeIntervalSince1970];
