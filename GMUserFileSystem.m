@@ -85,6 +85,9 @@ GM_EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSyst
 GM_EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileSizeInBlocksKey = @"kGMUserFileSystemFileSizeInBlocksKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileOptimalIOSizeKey = @"kGMUserFileSystemFileOptimalIOSizeKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsAllocateKey = @"kGMUserFileSystemVolumeSupportsAllocateKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey = @"kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExchangeDataKey = @"kGMUserFileSystemVolumeSupportsExchangeDataKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey = @"kGMUserFileSystemVolumeMaxFilenameLengthKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey = @"kGMUserFileSystemVolumeFileSystemBlockSizeKey";
@@ -92,8 +95,6 @@ GM_EXPORT NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey = @"kGMU
 // TODO: Remove comment on EXPORT if/when setvolname is supported.
 /* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
 /* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeNameKey = @"kGMUserFileSystemVolumeNameKey";
-
-GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey = @"kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey";
 
 // FinderInfo and ResourceFork keys
 GM_EXPORT NSString* const kGMUserFileSystemFinderFlagsKey = @"kGMUserFileSystemFinderFlagsKey";
@@ -120,23 +121,25 @@ typedef enum {
 } GMUserFileSystemErrorCode;
 
 typedef enum {
-  GMUserFileSystem_NOT_MOUNTED,   // Not mounted.
-  GMUserFileSystem_MOUNTING,      // In the process of mounting.
-  GMUserFileSystem_INITIALIZING,  // Almost done mounting.
-  GMUserFileSystem_MOUNTED,       // Confirmed to be mounted.
-  GMUserFileSystem_UNMOUNTING,    // In the process of unmounting.
-  GMUserFileSystem_FAILURE,       // Failed state; probably a mount failure.
+  GMUserFileSystem_NOT_MOUNTED,     // Not mounted.
+  GMUserFileSystem_MOUNTING,        // In the process of mounting.
+  GMUserFileSystem_INITIALIZING,    // Almost done mounting.
+  GMUserFileSystem_MOUNTED,         // Confirmed to be mounted.
+  GMUserFileSystem_UNMOUNTING,      // In the process of unmounting.
+  GMUserFileSystem_FAILURE,         // Failed state; probably a mount failure.
 } GMUserFileSystemStatus;
 
 @interface GMUserFileSystemInternal : NSObject {
   NSString* mountPath_;
   GMUserFileSystemStatus status_;
-  BOOL shouldCheckForResource_;   // Try to handle FinderInfo/Resource Forks?
-  BOOL isThreadSafe_;  // Is the delegate thread-safe?
-  BOOL supportsExtendedTimes_;  // Delegate supports create and backup times?
-  BOOL supportsSetVolumeName_;  // Delegate supports setvolname?
-  BOOL supportsCaseSensitiveNames_;
-  BOOL isReadOnly_;  // Is this mounted read-only?
+  BOOL shouldCheckForResource_;     // Try to handle FinderInfo/Resource Forks?
+  BOOL isThreadSafe_;               // Is the delegate thread-safe?
+  BOOL supportsAllocate_;           // Delegate supports preallocation of files?
+  BOOL supportsCaseSensitiveNames_; // Delegate supports case sensitive names?
+  BOOL supportsExchangeData_;       // Delegate supports exchange data?
+  BOOL supportsExtendedTimes_;      // Delegate supports create and backup times?
+  BOOL supportsSetVolumeName_;      // Delegate supports setvolname?
+  BOOL isReadOnly_;                 // Is this mounted read-only?
   id delegate_;
 }
 - (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
@@ -154,9 +157,11 @@ typedef enum {
   if (self) {
     status_ = GMUserFileSystem_NOT_MOUNTED;
     isThreadSafe_ = isThreadSafe;
+    supportsAllocate_ = NO;
+    supportsCaseSensitiveNames_ = YES;
+    supportsExchangeData_ = NO;
     supportsExtendedTimes_ = NO;
     supportsSetVolumeName_ = NO;
-    supportsCaseSensitiveNames_ = YES;
     isReadOnly_ = NO;
     [self setDelegate:delegate];
   }
@@ -175,12 +180,16 @@ typedef enum {
 - (GMUserFileSystemStatus)status { return status_; }
 - (void)setStatus:(GMUserFileSystemStatus)status { status_ = status; }
 - (BOOL)isThreadSafe { return isThreadSafe_; }
+- (BOOL)supportsAllocate { return supportsAllocate_; };
+- (void)setSupportsAllocate:(BOOL)val { supportsAllocate_ = val; }
+- (BOOL)supportsCaseSensitiveNames { return supportsCaseSensitiveNames_; }
+- (void)setSupportsCaseSensitiveNames:(BOOL)val { supportsCaseSensitiveNames_ = val; }
+- (BOOL)supportsExchangeData { return supportsExchangeData_; }
+- (void)setSupportsExchangeData:(BOOL)val { supportsExchangeData_ = val; }
 - (BOOL)supportsExtendedTimes { return supportsExtendedTimes_; }
 - (void)setSupportsExtendedTimes:(BOOL)val { supportsExtendedTimes_ = val; }
 - (BOOL)supportsSetVolumeName { return supportsSetVolumeName_; }
 - (void)setSupportsSetVolumeName:(BOOL)val { supportsSetVolumeName_ = val; }
-- (BOOL)supportsCaseSensitiveNames { return supportsCaseSensitiveNames_; }
-- (void)setSupportsCaseSensitiveNames:(BOOL)val { supportsCaseSensitiveNames_ = val; }
 - (BOOL)shouldCheckForResource { return shouldCheckForResource_; }
 - (BOOL)isReadOnly { return isReadOnly_; }
 - (void)setIsReadOnly:(BOOL)val { isReadOnly_ = val; }
@@ -258,14 +267,20 @@ typedef enum {
   return [internal_ delegate];
 }
 
+- (BOOL)enableAllocate {
+  return [internal_ supportsAllocate];
+}
+- (BOOL)enableCaseSensitiveNames {
+  return [internal_ supportsCaseSensitiveNames];
+}
+- (BOOL)enableExchangeData {
+  return [internal_ supportsExchangeData];
+}
 - (BOOL)enableExtendedTimes {
   return [internal_ supportsExtendedTimes];
 }
 - (BOOL)enableSetVolumeName {
   return [internal_ supportsSetVolumeName];
-}
-- (BOOL)supportsCaseSensitiveNames {
-  return [internal_ supportsCaseSensitiveNames];
 }
 
 - (void)mountAtPath:(NSString *)mountPath 
@@ -378,19 +393,33 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
   NSError* error = nil;
   NSDictionary* attribs = [self attributesOfFileSystemForPath:@"/" error:&error];
+
   if (attribs) {
-    NSNumber* supports;
-    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsExtendedDatesKey];
-    if (supports && [supports boolValue]) {
-      [internal_ setSupportsExtendedTimes:YES];
+    NSNumber* supports = nil;
+
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsAllocateKey];
+    if (supports) {
+      [internal_ setSupportsAllocate:[supports boolValue]];
     }
-    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsSetVolumeNameKey];
-    if (supports && [supports boolValue]) {
-      [internal_ setSupportsSetVolumeName:YES];
-    }
+
     supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey];
-    if (supports && ![supports boolValue]) {
-      [internal_ setSupportsCaseSensitiveNames:NO];
+    if (supports) {
+      [internal_ setSupportsCaseSensitiveNames:[supports boolValue]];
+    }
+
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsExchangeDataKey];
+    if (supports) {
+      [internal_ setSupportsExchangeData:[supports boolValue]];
+    }
+
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsExtendedDatesKey];
+    if (supports) {
+      [internal_ setSupportsExtendedTimes:[supports boolValue]];
+    }
+
+    supports = [attribs objectForKey:kGMUserFileSystemVolumeSupportsSetVolumeNameKey];
+    if (supports) {
+      [internal_ setSupportsSetVolumeName:[supports boolValue]];
     }
   }
   
@@ -1093,6 +1122,11 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   return NO;
 }
 
+- (BOOL)supportsExchangeData {
+  id delegate = [internal_ delegate];
+  return [delegate respondsToSelector:@selector(exchangeDataOfItemAtPath:withItemAtPath:error:)];
+}
+
 - (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
                   withItemAtPath:(NSString *)path2
                            error:(NSError **)error {
@@ -1119,6 +1153,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }  
 
   NSMutableDictionary* attributes = [NSMutableDictionary dictionary];
+
   NSNumber* defaultSize = [NSNumber numberWithLongLong:(2LL * 1024 * 1024 * 1024)];
   [attributes setObject:defaultSize forKey:NSFileSystemSize];
   [attributes setObject:defaultSize forKey:NSFileSystemFreeSize];
@@ -1126,7 +1161,15 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   [attributes setObject:defaultSize forKey:NSFileSystemFreeNodes];
   [attributes setObject:[NSNumber numberWithInt:255] forKey:kGMUserFileSystemVolumeMaxFilenameLengthKey];
   [attributes setObject:[NSNumber numberWithInt:4096] forKey:kGMUserFileSystemVolumeFileSystemBlockSizeKey];
-  
+
+  NSNumber* supports = nil;
+
+  supports = [NSNumber numberWithBool:[self supportsExchangeData]];
+  [attributes setObject:supports forKey:kGMUserFileSystemVolumeSupportsExchangeDataKey];
+
+  supports = [NSNumber numberWithBool:[self supportsAllocateFileAtPath]];
+  [attributes setObject:supports forKey:kGMUserFileSystemVolumeSupportsAllocateKey];
+
   // The delegate can override any of the above defaults by implementing the
   // attributesOfFileSystemForPath selector and returning a custom dictionary.
   if ([[internal_ delegate] respondsToSelector:@selector(attributesOfFileSystemForPath:error:)]) {
@@ -1420,6 +1463,15 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark FUSE Operations
 
+#define SET_CAPABILITY(conn, flag, enable)                                \
+  do {                                                                    \
+    if (enable) {                                                         \
+      (conn)->want |= (flag);                                             \
+    } else {                                                              \
+      (conn)->want &= ~(flag);                                            \
+    }                                                                     \
+  } while (0)
+
 #define MAYBE_USE_ERROR(var, error)                                       \
   if ((error) != nil &&                                                   \
       [[(error) domain] isEqualToString:NSPOSIXErrorDomain]) {            \
@@ -1439,19 +1491,11 @@ static void* fusefm_init(struct fuse_conn_info* conn) {
   }
   @catch (id exception) { }
 
-  if ([fs enableExtendedTimes]) {
-    FUSE_ENABLE_XTIMES(conn);
-  }
-#if 0  // TODO: Remove #if 0 if/when setvolname is supported.
-  if ([fs enableSetVolumeName]) {
-    FUSE_ENABLE_SETVOLNAME(conn);
-  }
-#endif
-#ifdef FUSE_ENABLE_CASE_INSENSITIVE
-  if (![fs supportsCaseSensitiveNames]) {
-    FUSE_ENABLE_CASE_INSENSITIVE(conn);
-  }
-#endif
+  SET_CAPABILITY(conn, FUSE_CAP_ALLOCATE, [fs enableAllocate]);
+  SET_CAPABILITY(conn, FUSE_CAP_XTIMES, [fs enableExtendedTimes]);
+  SET_CAPABILITY(conn, FUSE_CAP_VOL_RENAME, [fs enableSetVolumeName]);
+  SET_CAPABILITY(conn, FUSE_CAP_CASE_INSENSITIVE, ![fs enableCaseSensitiveNames]);
+  SET_CAPABILITY(conn, FUSE_CAP_EXCHANGE_DATA, [fs enableExchangeData]);
 
   [pool release];
   return fs;

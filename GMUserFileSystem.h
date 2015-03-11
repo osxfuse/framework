@@ -731,6 +731,27 @@ extern NSString* const kGMUserFileSystemFileOptimalIOSizeKey;
 
 /*! @group Additional Volume Attribute Keys */
 
+/*!
+ * @abstract Specifies support for preallocating files.
+ * @discussion The value should be a boolean NSNumber that indicates whether or
+ * not the file system supports preallocating files.
+ */
+extern NSString* const kGMUserFileSystemVolumeSupportsAllocateKey;
+
+/*!
+ * @abstract Specifies support for case sensitive name.
+ * @discussion The value should be a boolean NSNumber that indicates whether or
+ * not the file system supports case sensitive names.
+ */
+extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey;
+
+/*!
+ * @abstract Specifies support for exchange data.
+ * @discussion The value should be a boolean NSNumber that indicates whether or
+ * not the file system supports exchanging the data of two files atomically.
+ */
+extern NSString* const kGMUserFileSystemVolumeSupportsExchangeDataKey;
+
 /*! 
  * @abstract Specifies support for extended dates.
  * @discussion The value should be a boolean NSNumber that indicates whether or 
@@ -751,13 +772,6 @@ extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey;
  * in bytes. If omitted 4096 bytes is assumed.
  */
 extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
-
-/*!
- * @abstract Specifies support for case sensitive name.
- * @discussion The value should be a boolean NSNumber that indicates whether or
- * not the file system supports case sensitive names.
- */
-extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
