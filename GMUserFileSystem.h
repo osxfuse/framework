@@ -152,6 +152,8 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  */
 - (void)unmount;
 
++ (pid_t *)contextPid;
+
 @end
 
 #pragma mark Notifications

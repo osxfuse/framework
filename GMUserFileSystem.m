@@ -354,6 +354,12 @@ typedef enum {
   return (GMUserFileSystem *)context->private_data;
 }
 
++ (pid_t *)contextPid {
+  struct fuse_context* context = fuse_get_context();
+  assert(context);
+  return context->pid;
+}
+
 #define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2, u_int32_t)
 static const int kMaxWaitForMountTries = 50;
 static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
