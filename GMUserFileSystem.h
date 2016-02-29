@@ -3,7 +3,7 @@
 //  OSXFUSE
 //
 
-//  Copyright (c) 2011-2014 Benjamin Fleischer.
+//  Copyright (c) 2011-2016 Benjamin Fleischer.
 //  All rights reserved.
 
 //  OSXFUSE.framework is based on MacFUSE.framework. MacFUSE.framework is
@@ -48,6 +48,8 @@
  */
 
 #import <Foundation/Foundation.h>
+
+#import <OSXFUSE/GMAvailability.h>
 
 // See "64-bit Class and Instance Variable Access Control"
 #define GM_EXPORT __attribute__((visibility("default")))
@@ -95,13 +97,13 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  * @param isThreadSafe Is the file system delegate thread safe?
  * @result A GMUserFileSystem instance.
  */
-- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
+- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Set the file system delegate.
  * @param delegate The delegate to use from now on for this file system.
  */
-- (void)setDelegate:(id)delegate;
+- (void)setDelegate:(id)delegate GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Get the file system delegate.
@@ -121,7 +123,7 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  * @param options The set of mount time options to use.
  */
 - (void)mountAtPath:(NSString *)mountPath 
-        withOptions:(NSArray *)options;
+        withOptions:(NSArray *)options GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Mount the file system at the given path with advanced options.
@@ -142,15 +144,15 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  */
 - (void)mountAtPath:(NSString *)mountPath 
         withOptions:(NSArray *)options
-   shouldForeground:(BOOL)shouldForeground     // Recommend: YES
-    detachNewThread:(BOOL)detachNewThread;     // Recommend: YES
+   shouldForeground:(BOOL)shouldForeground
+    detachNewThread:(BOOL)detachNewThread GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Unmount the file system.
  * @discussion Unmounts the file system. The kGMUserFileSystemDidUnmount
  * notification will be posted.
  */
-- (void)unmount;
+- (void)unmount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
@@ -159,29 +161,29 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
 /*! @group Notifications */
 
 /*! @abstract Error domain for GMUserFileSystem specific errors */
-extern NSString* const kGMUserFileSystemErrorDomain;
+extern NSString* const kGMUserFileSystemErrorDomain GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Key in notification dictionary for mount path
  * @discussion The value will be an NSString that is the mount path.
  */
-extern NSString* const kGMUserFileSystemMountPathKey;
+extern NSString* const kGMUserFileSystemMountPathKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract Key in notification dictionary for an error */
-extern NSString* const kGMUserFileSystemErrorKey;
+extern NSString* const kGMUserFileSystemErrorKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Notification sent when the mountAtPath operation fails.
  * @discussion The userInfo will contain an kGMUserFileSystemErrorKey with an 
  * NSError* that describes the error.
  */
-extern NSString* const kGMUserFileSystemMountFailed;
+extern NSString* const kGMUserFileSystemMountFailed GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract Notification sent after the filesystem is successfully mounted. */
-extern NSString* const kGMUserFileSystemDidMount;
+extern NSString* const kGMUserFileSystemDidMount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract Notification sent after the filesystem is successfully unmounted. */
-extern NSString* const kGMUserFileSystemDidUnmount;
+extern NSString* const kGMUserFileSystemDidUnmount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark -
 
@@ -199,10 +201,10 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 @interface NSObject (GMUserFileSystemLifecycle)
 
 /*! @abstract Called just before the mount of the file system occurs. */
-- (void)willMount;
+- (void)willMount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract Called just before an unmount of the file system will occur. */
-- (void)willUnmount;
+- (void)willUnmount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
@@ -238,7 +240,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @param error Should be filled with a POSIX error in case of failure.
  * @result An array of NSString or nil on error.
  */
-- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error;
+- (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Getting and Setting Attributes
 
@@ -275,7 +277,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path
                                 userData:(id)userData
-                                   error:(NSError **)error;
+                                   error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Returns file system attributes.
@@ -297,7 +299,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @result A dictionary of attributes for the file system.
  */
 - (NSDictionary *)attributesOfFileSystemForPath:(NSString *)path
-                                          error:(NSError **)error;
+                                          error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Set attributes at the specified path.
@@ -329,7 +331,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 - (BOOL)setAttributes:(NSDictionary *)attributes 
          ofItemAtPath:(NSString *)path
              userData:(id)userData
-                error:(NSError **)error;
+                error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark File Contents
 
@@ -342,7 +344,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @param path The path to the file.
  * @result The contents of the file or nil if a file does not exist at path.
  */
-- (NSData *)contentsAtPath:(NSString *)path;
+- (NSData *)contentsAtPath:(NSString *)path GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Opens the file at the given path for read/write.
@@ -360,7 +362,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 - (BOOL)openFileAtPath:(NSString *)path 
                   mode:(int)mode
               userData:(id *)userData
-                 error:(NSError **)error;
+                 error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Called when an opened file is closed.
@@ -370,7 +372,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @param path The path to the file.
  * @param userData The userData corresponding to this open file or nil.
  */
-- (void)releaseFileAtPath:(NSString *)path userData:(id)userData;
+- (void)releaseFileAtPath:(NSString *)path userData:(id)userData GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Reads data from the open file at the specified path.
@@ -392,7 +394,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                buffer:(char *)buffer 
                  size:(size_t)size 
                offset:(off_t)offset
-                error:(NSError **)error;
+                error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Writes data to the open file at the specified path.
@@ -414,7 +416,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                 buffer:(const char *)buffer
                   size:(size_t)size 
                 offset:(off_t)offset
-                 error:(NSError **)error;
+                 error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Preallocates space for the open file at the specified path.
@@ -440,7 +442,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                       options:(int)options
                        offset:(off_t)offset
                        length:(off_t)length
-                        error:(NSError **)error;
+                        error:(NSError **)error GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 /*!
  * @abstract Atomically exchanges data between files.
@@ -453,7 +455,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)exchangeDataOfItemAtPath:(NSString *)path1
                   withItemAtPath:(NSString *)path2
-                           error:(NSError **)error;
+                           error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Creating an Item
 
@@ -468,7 +470,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)createDirectoryAtPath:(NSString *)path 
                    attributes:(NSDictionary *)attributes
-                        error:(NSError **)error;
+                        error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Creates and opens a file at the specified path.
@@ -486,7 +488,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
                 userData:(id *)userData
-                   error:(NSError **)error;
+                   error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Moving an Item
 
@@ -503,7 +505,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)moveItemAtPath:(NSString *)source 
                 toPath:(NSString *)destination
-                 error:(NSError **)error;
+                 error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Removing an Item
 
@@ -517,7 +519,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @param error Should be filled with a POSIX error in case of failure.
  * @result YES if the directory was successfully removed.
  */
-- (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error;
+- (BOOL)removeDirectoryAtPath:(NSString *)path error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Removes the item at the given path.
@@ -529,7 +531,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @param error Should be filled with a POSIX error in case of failure.
  * @result YES if the item was successfully removed.
  */
-- (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error;
+- (BOOL)removeItemAtPath:(NSString *)path error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Linking an Item
 
@@ -543,7 +545,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)linkItemAtPath:(NSString *)path
                 toPath:(NSString *)otherPath
-                 error:(NSError **)error;
+                 error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Symbolic Links
 
@@ -557,7 +559,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path 
              withDestinationPath:(NSString *)otherPath
-                           error:(NSError **)error;
+                           error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Reads the destination of a symbolic link.
@@ -567,7 +569,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @result The destination path of the symbolic link or nil on error.
  */
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path
-                                        error:(NSError **)error;
+                                        error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #pragma mark Extended Attributes
 
@@ -581,7 +583,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @result An NSArray of extended attribute names or nil on error.
  */
 - (NSArray *)extendedAttributesOfItemAtPath:path
-                                      error:(NSError **)error;
+                                      error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Returns the contents of the extended attribute at the specified path.
@@ -595,7 +597,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
 - (NSData *)valueOfExtendedAttribute:(NSString *)name
                         ofItemAtPath:(NSString *)path
                             position:(off_t)position
-                               error:(NSError **)error;
+                               error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Writes the contents of the extended attribute at the specified path.
@@ -613,7 +615,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
                        value:(NSData *)value
                     position:(off_t)position
                      options:(int)options
-                       error:(NSError **)error;
+                       error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Removes the extended attribute at the specified path.
@@ -625,7 +627,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  */
 - (BOOL)removeExtendedAttribute:(NSString *)name
                    ofItemAtPath:(NSString *)path
-                          error:(NSError **)error;
+                          error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
@@ -661,7 +663,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @result A dictionary of FinderInfo attributes or nil on error.
  */
 - (NSDictionary *)finderAttributesAtPath:(NSString *)path 
-                                   error:(NSError **)error;
+                                   error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Returns ResourceFork attributes at the specified path.
@@ -677,7 +679,7 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @result A dictionary of ResourceFork attributes or nil on error.
  */
 - (NSDictionary *)resourceAttributesAtPath:(NSString *)path
-                                     error:(NSError **)error;
+                                     error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
@@ -690,34 +692,34 @@ extern NSString* const kGMUserFileSystemDidUnmount;
  * @discussion The value should be an NSNumber with uint32 value that is the
  * file st_flags (man 2 stat). 
  */
-extern NSString* const kGMUserFileSystemFileFlagsKey;
+extern NSString* const kGMUserFileSystemFileFlagsKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract File access date.
  * @discussion The value should be an NSDate that is the last file access 
  * time. See st_atimespec (man 2 stat). 
  */
-extern NSString* const kGMUserFileSystemFileAccessDateKey;
+extern NSString* const kGMUserFileSystemFileAccessDateKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract File status change date.
  * @discussion The value should be an NSDate that is the last file status change 
  * time. See st_ctimespec (man 2 stat). 
  */
-extern NSString* const kGMUserFileSystemFileChangeDateKey;
+extern NSString* const kGMUserFileSystemFileChangeDateKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract For file backup date.
  * @discussion The value should be an NSDate that is the backup date. 
  */
-extern NSString* const kGMUserFileSystemFileBackupDateKey;
+extern NSString* const kGMUserFileSystemFileBackupDateKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract For file size in 512 byte blocks.
  * @discussion The value should be an NSNumber that is the file size in 512 byte 
  * blocks. It is ignored unless the file system is mounted with option \@"sparse".
  */
-extern NSString* const kGMUserFileSystemFileSizeInBlocksKey;
+extern NSString* const kGMUserFileSystemFileSizeInBlocksKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 /*!
  * @abstract Optimal file I/O size.
@@ -725,7 +727,7 @@ extern NSString* const kGMUserFileSystemFileSizeInBlocksKey;
  * file st_blksize (man 2 stat). If unset or zero the global I/O size will be
  * used, which can be specified at mount-time (option iosize).
  */
-extern NSString* const kGMUserFileSystemFileOptimalIOSizeKey;
+extern NSString* const kGMUserFileSystemFileOptimalIOSizeKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 #pragma mark Additional Volume Attribute Keys
 
@@ -736,42 +738,42 @@ extern NSString* const kGMUserFileSystemFileOptimalIOSizeKey;
  * @discussion The value should be a boolean NSNumber that indicates whether or
  * not the file system supports preallocating files.
  */
-extern NSString* const kGMUserFileSystemVolumeSupportsAllocateKey;
+extern NSString* const kGMUserFileSystemVolumeSupportsAllocateKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 /*!
  * @abstract Specifies support for case sensitive name.
  * @discussion The value should be a boolean NSNumber that indicates whether or
  * not the file system supports case sensitive names.
  */
-extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey;
+extern NSString* const kGMUserFileSystemVolumeSupportsCaseSensitiveNamesKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract Specifies support for exchange data.
  * @discussion The value should be a boolean NSNumber that indicates whether or
  * not the file system supports exchanging the data of two files atomically.
  */
-extern NSString* const kGMUserFileSystemVolumeSupportsExchangeDataKey;
+extern NSString* const kGMUserFileSystemVolumeSupportsExchangeDataKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 /*! 
  * @abstract Specifies support for extended dates.
  * @discussion The value should be a boolean NSNumber that indicates whether or 
  * not the file system supports extended dates such as creation and backup dates.
  */
-extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
+extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 /*! 
  * @abstract Specifies the maximum filename length in bytes.
  * @discussion The value should be an NSNumber that is the maximum filename length
  * in bytes. If omitted 255 bytes is assumed.
  */	
-extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey;	
+extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 	
 /*! 
  * @abstract Specifies the file system block size in bytes.
  * @discussion The value should be an NSNumber that is the file system block size
  * in bytes. If omitted 4096 bytes is assumed.
  */
-extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
+extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
 #pragma mark Additional Finder and Resource Fork keys
 
@@ -782,25 +784,25 @@ extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
  * @discussion The value should contain an NSNumber created by OR'ing together
  * Finder flags (e.g. kHasCustomIcon). See CarbonCore/Finder.h. 
  */
-extern NSString* const kGMUserFileSystemFinderFlagsKey;
+extern NSString* const kGMUserFileSystemFinderFlagsKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*!
  * @abstract FinderInfo extended flags.
  * @discussion The value should contain an NSNumber created by OR'ing together
  * extended Finder flags. See CarbonCore/Finder.h.
  */
-extern NSString* const kGMUserFileSystemFinderExtendedFlagsKey;
+extern NSString* const kGMUserFileSystemFinderExtendedFlagsKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract ResourceFork custom icon. 
  * @discussion The value should be NSData for a raw .icns file. 
  */
-extern NSString* const kGMUserFileSystemCustomIconDataKey;
+extern NSString* const kGMUserFileSystemCustomIconDataKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract ResourceFork webloc.
  * @discussion The value should be an NSURL that is the webloc.
  */
-extern NSString* const kGMUserFileSystemWeblocURLKey;
+extern NSString* const kGMUserFileSystemWeblocURLKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 #undef GM_EXPORT

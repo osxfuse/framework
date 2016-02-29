@@ -36,6 +36,7 @@
 //  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  OF  THE
 //  POSSIBILITY OF SUCH DAMAGE.
 
-#import <OSXFUSE/GMUserFileSystem.h>
+#import <OSXFUSE/GMAvailability.h>
 #import <OSXFUSE/GMFinderInfo.h>
+#import <OSXFUSE/GMUserFileSystem.h>
 #import <OSXFUSE/GMResourceFork.h>

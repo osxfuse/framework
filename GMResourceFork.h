@@ -3,6 +3,9 @@
 //  OSXFUSE
 //
 
+//  Copyright (c) 2016 Benjamin Fleischer.
+//  All rights reserved.
+
 //  OSXFUSE.framework is based on MacFUSE.framework. MacFUSE.framework is
 //  covered under the following BSD-style license:
 //
@@ -45,6 +48,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import <OSXFUSE/GMAvailability.h>
+
 #define GM_EXPORT __attribute__((visibility("default")))
 
 @class GMResource;
@@ -61,7 +66,7 @@ GM_EXPORT @interface GMResourceFork : NSObject {
 }
 
 /*! @abstract Returns an autoreleased GMResourceFork */
-+ (GMResourceFork *)resourceFork;
++ (GMResourceFork *)resourceFork GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Adds a resource to the resource fork by specifying components.
@@ -74,20 +79,20 @@ GM_EXPORT @interface GMResourceFork : NSObject {
 - (void)addResourceWithType:(ResType)resType
                       resID:(ResID)resID
                        name:(NSString *)name
-                       data:(NSData *)data;
+                       data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Adds a resource to the resource fork.
  * @discussion See CarbonCore/Finder.h for some common resource identifiers.
  * @param resource The resource to add.
  */
-- (void)addResource:(GMResource *)resource;
+- (void)addResource:(GMResource *)resource GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Constucts the raw data for the resource fork.
  * @result NSData for the resource fork containing all added resources.
  */
-- (NSData *)data;
+- (NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
@@ -114,7 +119,7 @@ GM_EXPORT @interface GMResource : NSObject {
 + (GMResource *)resourceWithType:(ResType)resType
                            resID:(ResID)resID
                             name:(NSString *)name  // May be nil
-                            data:(NSData *)data;
+                            data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
  * @abstract Initializes a resource by specifying components.
@@ -127,19 +132,19 @@ GM_EXPORT @interface GMResource : NSObject {
 - (id)initWithType:(ResType)resType
              resID:(ResID)resID 
               name:(NSString *)name  // May be nil
-              data:(NSData *)data;
+              data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract The resource ID */
-- (ResID)resID;
+- (ResID)resID GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract The four-char code resource type */
-- (ResType)resType;
+- (ResType)resType GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract The resource name or nil if none */
-- (NSString *)name;
+- (NSString *)name GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! @abstract The resource data */
-- (NSData *)data;
+- (NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
 
