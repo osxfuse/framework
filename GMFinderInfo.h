@@ -48,7 +48,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import <OSXFUSE/GMAvailability.h>
+#import "GMAvailability.h"
 
 #define GM_EXPORT __attribute__((visibility("default")))
 

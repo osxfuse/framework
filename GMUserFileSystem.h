@@ -49,7 +49,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import <OSXFUSE/GMAvailability.h>
+#import "GMAvailability.h"
 
 // See "64-bit Class and Instance Variable Access Control"
 #define GM_EXPORT __attribute__((visibility("default")))
