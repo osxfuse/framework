@@ -38,11 +38,11 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 
 /*!
- * @framework FUSE for OS X Framework
+ * @framework FUSE for macOS Framework
  * @abstract An Objective-C API for creating user space file systems.
  * @discussion OSXFUSE.framework is an Objective-C API that enables you to
  * easily create a file system in user space. With a little bit
- * of work, FUSE for OS X can be used to display any data set as a file system
+ * of work, FUSE for macOS can be used to display any data set as a file system
  * that can be viewed and manipulated in the Finder.<br>
  *
  *
