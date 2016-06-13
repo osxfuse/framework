@@ -265,7 +265,7 @@ typedef struct {
   ResourceTypeListHeader typeListHeader;
   memset(&typeListHeader, 0, sizeof(typeListHeader));
   
-  // It looks like OS X prefers the resource data to start at offset 256 bytes.
+  // It looks like macOS prefers the resource data to start at offset 256 bytes.
   UInt32 dataOffset = sizeof(forkHeader) > 256 ? sizeof(forkHeader) : 256;
   UInt32 dataLen = [resourceData length];
   UInt32 mapOffset = dataOffset + dataLen;
