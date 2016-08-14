@@ -513,19 +513,21 @@ extern NSString* const kGMUserFileSystemDidUnmount GM_AVAILABLE_OSXFUSE_2_AND_LA
  * @abstract Creates and opens a file at the specified path.
  * @discussion  This should create and open the file at the same time. The 
  * attributes may contain keys similar to setAttributes:.
- * @seealso man creat(2)
+ * @seealso man open(2)
  * @param path The path of the file to create.
  * @param attributes Set of attributes to apply to the newly created file.
+ * @param flags Open flags (see open man page)
  * @param userData Out parameter that can be filled in with arbitrary user data.
  *        The given userData will be retained and passed back in to delegate
  *        methods that are acting on this open file.
  * @param error Should be filled with a POSIX error in case of failure.
  * @result YES if the directory was successfully created.
  */
-- (BOOL)createFileAtPath:(NSString *)path 
+- (BOOL)createFileAtPath:(NSString *)path
               attributes:(NSDictionary *)attributes
+                   flags:(int)flags
                 userData:(id *)userData
-                   error:(NSError **)error GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+                   error:(NSError **)error GM_AVAILABLE_OSXFUSE_3_5_AND_LATER;
 
 #pragma mark Moving an Item
 
@@ -752,7 +754,7 @@ extern NSString* const kGMUserFileSystemFileChangeDateKey GM_AVAILABLE_OSXFUSE_2
 extern NSString* const kGMUserFileSystemFileBackupDateKey GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 /*! 
- * @abstract For file size in 512 byte blocks.
+ * @abstract File size in 512 byte blocks.
  * @discussion The value should be an NSNumber that is the file size in 512 byte 
  * blocks. It is ignored unless the file system is mounted with option \@"sparse".
  */
@@ -812,7 +814,7 @@ extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey GM_AVAILABLE_
  */
 extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey GM_AVAILABLE_OSXFUSE_3_AND_LATER;
 
-#pragma mark Additional Finder and Resource Fork keys
+#pragma mark Additional Finder and Resource Fork Keys
 
 /*! @group Additional Finder and Resource Fork Keys */
 

@@ -206,7 +206,31 @@ typedef enum {
   shouldCheckForResource_ =
     [delegate_ respondsToSelector:@selector(finderAttributesAtPath:error:)] ||
     [delegate_ respondsToSelector:@selector(resourceAttributesAtPath:error:)];
+  
+  // Check for deprecated methods.
+  SEL deprecatedMethods[] = {
+    @selector(createFileAtPath:attributes:userData:error:)
+  };
+  for (int i = 0; i < sizeof(deprecatedMethods) / sizeof(SEL); ++i) {
+    SEL sel = deprecatedMethods[i];
+    if ([delegate_ respondsToSelector:sel]) {
+      NSLog(@"*** WARNING: GMUserFileSystem delegate implements deprecated "
+            @"selector: %@", NSStringFromSelector(sel));
+    }
+  }
 }
+
+@end
+
+// Deprecated delegate methods that we still support for backward compatibility
+// with previously compiled file systems. This will be actively trimmed as
+// new releases occur.
+@interface NSObject (GMUserFileSystemDeprecated)
+
+- (BOOL)createFileAtPath:(NSString *)path
+              attributes:(NSDictionary *)attributes
+                userData:(id *)userData
+                   error:(NSError **)error;
 
 @end
 
@@ -830,6 +854,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 - (BOOL)createFileAtPath:(NSString *)path 
               attributes:(NSDictionary *)attributes
+                   flags:(int)flags
                 userData:(id *)userData
                    error:(NSError **)error {
   if (OSXFUSE_OBJC_DELEGATE_ENTRY_ENABLED()) {
@@ -837,9 +862,17 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
     OSXFUSE_OBJC_DELEGATE_ENTRY(DTRACE_STRING(traceinfo));
   }
 
-  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:userData:error:)]) {
-    return [[internal_ delegate] createFileAtPath:path attributes:attributes 
-                                         userData:userData error:error];
+  if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:flags:userData:error:)]) {
+    return [[internal_ delegate] createFileAtPath:path
+                                       attributes:attributes
+                                            flags:flags
+                                         userData:userData
+                                            error:error];
+  } else if ([[internal_ delegate] respondsToSelector:@selector(createFileAtPath:attributes:userData:error:)]) {
+    return [[internal_ delegate] createFileAtPath:path
+                                       attributes:attributes
+                                         userData:userData
+                                            error:error];
   }
 
   *error = [GMUserFileSystem errorWithCode:EACCES];
@@ -1569,13 +1602,14 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
   @try {
     NSError* error = nil;
     id userData = nil;
-    unsigned long perm = mode & ALLPERMS;
-    NSDictionary* attribs = 
-      [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm] 
+    unsigned long perms = mode & ALLPERMS;
+    NSDictionary* attribs =
+      [NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:perms]
                                   forKey:NSFilePosixPermissions];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
                   attributes:attribs
+                       flags:fi->flags
                     userData:&userData
                        error:&error]) {
       ret = 0;
