@@ -48,7 +48,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "GMAvailability.h"
+#import <OSXFUSE/GMAvailability.h>
 
 #define GM_EXPORT __attribute__((visibility("default")))
 
@@ -66,7 +66,7 @@ GM_EXPORT @interface GMResourceFork : NSObject {
 }
 
 /*! @abstract Returns an autoreleased GMResourceFork */
-+ (GMResourceFork *)resourceFork GM_AVAILABLE_OSXFUSE_2_AND_LATER;
++ (GMResourceFork *)resourceFork GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Adds a resource to the resource fork by specifying components.
@@ -79,20 +79,20 @@ GM_EXPORT @interface GMResourceFork : NSObject {
 - (void)addResourceWithType:(ResType)resType
                       resID:(ResID)resID
                        name:(NSString *)name
-                       data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+                       data:(NSData *)data GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Adds a resource to the resource fork.
  * @discussion See CarbonCore/Finder.h for some common resource identifiers.
  * @param resource The resource to add.
  */
-- (void)addResource:(GMResource *)resource GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (void)addResource:(GMResource *)resource GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Constucts the raw data for the resource fork.
  * @result NSData for the resource fork containing all added resources.
  */
-- (NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (NSData *)data GM_AVAILABLE(2_0);
 
 @end
 
@@ -119,7 +119,7 @@ GM_EXPORT @interface GMResource : NSObject {
 + (GMResource *)resourceWithType:(ResType)resType
                            resID:(ResID)resID
                             name:(NSString *)name  // May be nil
-                            data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+                            data:(NSData *)data GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Initializes a resource by specifying components.
@@ -132,19 +132,19 @@ GM_EXPORT @interface GMResource : NSObject {
 - (id)initWithType:(ResType)resType
              resID:(ResID)resID 
               name:(NSString *)name  // May be nil
-              data:(NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+              data:(NSData *)data GM_AVAILABLE(2_0);
 
 /*! @abstract The resource ID */
-- (ResID)resID GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (ResID)resID GM_AVAILABLE(2_0);
 
 /*! @abstract The four-char code resource type */
-- (ResType)resType GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (ResType)resType GM_AVAILABLE(2_0);
 
 /*! @abstract The resource name or nil if none */
-- (NSString *)name GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (NSString *)name GM_AVAILABLE(2_0);
 
 /*! @abstract The resource data */
-- (NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (NSData *)data GM_AVAILABLE(2_0);
 
 @end
 

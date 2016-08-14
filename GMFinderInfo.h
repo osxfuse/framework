@@ -48,7 +48,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "GMAvailability.h"
+#import <OSXFUSE/GMAvailability.h>
 
 #define GM_EXPORT __attribute__((visibility("default")))
 
@@ -67,39 +67,39 @@ GM_EXPORT @interface GMFinderInfo : NSObject {
 }
 
 /*! @abstract Returns an autorleased GMFinderInfo */
-+ (GMFinderInfo *)finderInfo GM_AVAILABLE_OSXFUSE_2_AND_LATER;
++ (GMFinderInfo *)finderInfo GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Sets FinderInfo flags.
  * @discussion See CarbonCore/Finder.h for the set of flags.
  * @param flags OR'd set of valid Finder flags.
  */
-- (void)setFlags:(UInt16)flags GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (void)setFlags:(UInt16)flags GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Sets FinderInfo extended flags.
  * @discussion See CarbonCore/Finder.h for the set of extended flags.
  * @param flags OR'd set of valid Finder extended flags.
  */
-- (void)setExtendedFlags:(UInt16)extendedFlags GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (void)setExtendedFlags:(UInt16)extendedFlags GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Sets FinderInfo four-char type code.
  * @param typeCode The four-char type code to set.
  */
-- (void)setTypeCode:(OSType)typeCode GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (void)setTypeCode:(OSType)typeCode GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Sets FinderInfo four-char creator code.
  * @param typeCode The four-char creator code to set.
  */
-- (void)setCreatorCode:(OSType)creatorCode GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (void)setCreatorCode:(OSType)creatorCode GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Constucts the raw data for the FinderInfo.
  * @result NSData for the FinderInfo based on the current settings.
  */
-- (NSData *)data GM_AVAILABLE_OSXFUSE_2_AND_LATER;
+- (NSData *)data GM_AVAILABLE(2_0);
 
 @end
 
