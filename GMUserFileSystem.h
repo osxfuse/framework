@@ -87,6 +87,18 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
 }
 
 /*!
+ * @abstract Returns the context of the current file system operation.
+ * @discussion The context of the current file system operation is only valid
+ * during a file system delegate callback. The returned dictionary contains the
+ * following keys (you must ignore unknown keys):<ul>
+ *   <li>kGMUserFileSystemContextUserIDKey
+ *   <li>kGMUserFileSystemContextGroupIDKey
+ *   <li>kGMUserFileSystemContextProcessIDKey</ul>
+ * @result The current file system operation context or nil.
+ */
++ (NSDictionary *)currentContext GM_AVAILABLE_OSXFUSE_3_5_AND_LATER;
+
+/*!
  * @abstract Initialize the user space file system.
  * @discussion The file system delegate should implement some or all of the
  * GMUserFileSystemOperations informal protocol. You should only specify YES
@@ -155,6 +167,31 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
 - (void)unmount GM_AVAILABLE_OSXFUSE_2_AND_LATER;
 
 @end
+
+#pragma mark Operation Context
+
+/*! @group Operation Context */
+
+/*!
+ * @abstract User identifier
+ * @discussion The uid of the user performing the current file system operation.
+ * The value is an NSNumber with uint32 value.
+ */
+extern NSString* const kGMUserFileSystemContextUserIDKey GM_AVAILABLE_OSXFUSE_3_5_AND_LATER;
+
+/*!
+ * @abstract Group identifier
+ * @discussion The gid of the user performing the current file system operation.
+ * The value is an NSNumber with uint32 value.
+ */
+extern NSString* const kGMUserFileSystemContextGroupIDKey GM_AVAILABLE_OSXFUSE_3_5_AND_LATER;
+
+/*!
+ * @abstract Process identifier
+ * @discussion The pid of the process performing the current file system
+ * operation. The value is an NSNumber with int32 value.
+ */
+extern NSString* const kGMUserFileSystemContextProcessIDKey GM_AVAILABLE_OSXFUSE_3_5_AND_LATER;
 
 #pragma mark Notifications
 

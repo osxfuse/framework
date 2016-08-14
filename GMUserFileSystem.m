@@ -53,6 +53,8 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
 #include <sys/vnode.h>
@@ -69,6 +71,11 @@
 // Creates a dtrace-ready string with any newlines removed.
 #define DTRACE_STRING(s)  \
 ((char *)[[s stringByReplacingOccurrencesOfString:@"\n" withString:@" "] UTF8String])
+
+// Operation Context
+GM_EXPORT NSString* const kGMUserFileSystemContextUserIDKey = @"kGMUserFileSystemContextUserIDKey";
+GM_EXPORT NSString* const kGMUserFileSystemContextGroupIDKey = @"kGMUserFileSystemContextGroupIDKey";
+GM_EXPORT NSString* const kGMUserFileSystemContextProcessIDKey = @"kGMUserFileSystemContextProcessIDKey";
 
 // Notifications
 GM_EXPORT NSString* const kGMUserFileSystemErrorDomain = @"GMUserFileSystemErrorDomain";
@@ -205,7 +212,7 @@ typedef enum {
 
 @interface GMUserFileSystem (GMUserFileSystemPrivate)
 
-// The filesystem for the current thread. Valid only during a fuse callback.
+// The file system for the current thread. Valid only during a FUSE callback.
 + (GMUserFileSystem *)currentFS;
 
 // Convenience method to creates an autoreleased NSError in the 
@@ -241,6 +248,22 @@ typedef enum {
 @end
 
 @implementation GMUserFileSystem
+
++ (NSDictionary *)currentContext {
+  struct fuse_context* context = fuse_get_context();
+  if (!context) {
+    return nil;
+  }
+  
+  NSMutableDictionary* dict = [[NSMutableDictionary alloc] init];
+  [dict setObject:[NSNumber numberWithUnsignedInt:context->uid]
+                 forKey:kGMUserFileSystemContextUserIDKey];
+  [dict setObject:[NSNumber numberWithUnsignedInt:context->gid]
+                 forKey:kGMUserFileSystemContextGroupIDKey];
+  [dict setObject:[NSNumber numberWithInt:context->pid]
+                 forKey:kGMUserFileSystemContextProcessIDKey];
+  return [dict autorelease];
+}
 
 - (id)init {
   return [self initWithDelegate:nil isThreadSafe:NO];
@@ -2222,14 +2245,14 @@ static struct fuse_operations fusefm_oper = {
   BOOL isThreadSafe = [internal_ isThreadSafe];
   BOOL shouldForeground = [[args objectForKey:@"shouldForeground"] boolValue];
 
-  // Maybe there is a dead fuse FS stuck on our mount point?
+  // Maybe there is a dead FUSE file system stuck on our mount point?
   struct statfs statfs_buf;
   memset(&statfs_buf, 0, sizeof(statfs_buf));
   int rc = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
   if (rc == 0) {
     if (statfs_buf.f_fssubtype == (short)(-1)) {
-      // We use a special indicator value from osxfuse in the f_fssubtype field
-      // to indicate that the currently mounted filesystem is dead. It probably 
+      // We use a special indicator value from FUSE in the f_fssubtype field to
+      // indicate that the currently mounted filesystem is dead. It probably
       // crashed and was never unmounted.
       rc = unmount([[internal_ mountPath] UTF8String], 0);
       if (rc != 0) {
@@ -2324,8 +2347,8 @@ static struct fuse_operations fusefm_oper = {
   // don't call directoryContents before we mount our FUSE filesystem and 
   // the filesystem uses NSFileManager we may deadlock. It seems that the
   // NSFileManager class will do lazy init and will query all mounted
-  // filesystems. This leads to deadlock when we re-enter our mounted fuse fs. 
-  // Once initialized it seems to work fine.
+  // filesystems. This leads to deadlock when we re-enter our mounted FUSE file
+  // system. Once initialized it seems to work fine.
   NSFileManager* fileManager = [[NSFileManager alloc] init];
   [fileManager contentsOfDirectoryAtPath:@"/Volumes" error:nil];
   [fileManager release];
@@ -2366,7 +2389,7 @@ static struct fuse_operations fusefm_oper = {
     // If we returned from fuse_main while we still think we are 
     // mounting then an error must have occurred during mount.
     NSString* description = [NSString stringWithFormat:@
-      "Internal fuse error (rc=%d) while attempting to mount the file system. "
+      "Internal FUSE error (rc=%d) while attempting to mount the file system. "
       "For now, the best way to diagnose is to look for error messages using "
       "Console.", ret];
     NSDictionary* userInfo =
