@@ -2343,42 +2343,15 @@ static struct fuse_operations fusefm_oper = {
     }
   }
 
-  // Check and create mount path as necessary.
+  // Check mount path as necessary.
   struct stat stat_buf;
   memset(&stat_buf, 0, sizeof(stat_buf));
   rc = stat([[internal_ mountPath] UTF8String], &stat_buf);
-  if (rc == 0) {
-    if (!(stat_buf.st_mode & S_IFDIR)) {
-      [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
-      [pool release];
-      return;
-    }
-  } else {
-    switch (errno) {
-      case ENOTDIR: {
-        [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
-        [pool release];
-        return;
-      }
-      case ENOENT: {
-        // The mount directory does not exists; we'll create as a courtesy.
-        rc = mkdir([[internal_ mountPath] UTF8String], 0775);
-        if (rc != 0) {
-          NSDictionary* userInfo =
-            [NSDictionary dictionaryWithObjectsAndKeys:
-             @"Unable to create directory for mount point.", NSLocalizedDescriptionKey,
-            [GMUserFileSystem errorWithCode:errno], NSUnderlyingErrorKey,
-             nil, nil];
-          NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
-                                               code:GMUserFileSystem_ERROR_MOUNT_MKDIR
-                                           userInfo:userInfo];
-          [self postMountError:error];
-          [pool release];
-          return;                  
-        }
-        break;
-      }
-    }
+  if ((rc == 0 && !S_ISDIR(stat_buf.st_mode)) ||
+      (rc != 0 && errno == ENOTDIR)) {
+    [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
+    [pool release];
+    return;
   }
 
   // Trigger initialization of NSFileManager. This is rather lame, but if we
