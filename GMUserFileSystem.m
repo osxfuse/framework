@@ -42,7 +42,7 @@
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
-#include <fuse/fuse_darwin.h>
+#include <fuse/fuse_lowlevel.h>
 
 #include <string.h>
 #include <errno.h>
@@ -245,7 +245,7 @@ typedef enum {
 + (NSError *)errorWithCode:(int)code;
 
 - (void)mount:(NSDictionary *)args;
-- (void)waitUntilMounted;
+- (void)waitUntilMounted:(NSNumber *)fileDescriptor;
 
 - (NSDictionary *)finderAttributesAtPath:(NSString *)path;
 - (NSDictionary *)resourceAttributesAtPath:(NSString *)path;
@@ -405,13 +405,12 @@ typedef enum {
 static const int kMaxWaitForMountTries = 50;
 static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
-- (void)waitUntilMounted {
+- (void)waitUntilMounted:(NSNumber *)fileDescriptor {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   
   for (int i = 0; i < kMaxWaitForMountTries; ++i) {
     UInt32 handShakeComplete = 0;
-    int ret = ioctl(fuse_device_fd_np([[internal_ mountPath] UTF8String]), 
-                    FUSEDEVIOCGETHANDSHAKECOMPLETE, 
+    int ret = ioctl([fileDescriptor intValue], FUSEDEVIOCGETHANDSHAKECOMPLETE,
                     &handShakeComplete);
     if (ret == 0 && handShakeComplete) {
       [internal_ setStatus:GMUserFileSystem_MOUNTED];
@@ -420,7 +419,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
       NSDictionary* userInfo = 
         [NSDictionary dictionaryWithObjectsAndKeys:
          [internal_ mountPath], kGMUserFileSystemMountPathKey,
-         nil, nil];
+         nil];
       NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
       [center postNotificationName:kGMUserFileSystemDidMount object:self
                           userInfo:userInfo];
@@ -474,9 +473,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // back through the kernel after this routine returns. In order to post
   // the kGMUserFileSystemDidMount notification we start a new thread that will
   // poll until it is mounted.
-  [NSThread detachNewThreadSelector:@selector(waitUntilMounted) 
-                           toTarget:self 
-                         withObject:nil];
+  struct fuse_context* context = fuse_get_context();
+  struct fuse_session* se = fuse_get_session(context->fuse);
+  struct fuse_chan* chan = fuse_session_next_chan(se, NULL);
+  int fd = fuse_chan_fd(chan);
+  
+  [NSThread detachNewThreadSelector:@selector(waitUntilMounted:)
+                           toTarget:self
+                         withObject:[NSNumber numberWithInteger:fd]];
 }
 
 - (void)fuseDestroy {
@@ -488,7 +492,7 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   NSDictionary* userInfo = 
     [NSDictionary dictionaryWithObjectsAndKeys:
      [internal_ mountPath], kGMUserFileSystemMountPathKey,
-     nil, nil];
+     nil];
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemDidUnmount object:self
                       userInfo:userInfo];
@@ -2263,7 +2267,7 @@ static struct fuse_operations fusefm_oper = {
     [NSDictionary dictionaryWithObjectsAndKeys:
      [internal_ mountPath], kGMUserFileSystemMountPathKey,
      error, kGMUserFileSystemErrorKey,
-     nil, nil];
+     nil];
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center postNotificationName:kGMUserFileSystemMountFailed object:self
                       userInfo:userInfo];
@@ -2295,7 +2299,7 @@ static struct fuse_operations fusefm_oper = {
           [NSDictionary dictionaryWithObjectsAndKeys:
            description, NSLocalizedDescriptionKey,
            [GMUserFileSystem errorWithCode:errno], NSUnderlyingErrorKey,
-           nil, nil];
+           nil];
         NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
                                              code:GMUserFileSystem_ERROR_UNMOUNT_DEADFS
                                          userInfo:userInfo];
@@ -2327,7 +2331,7 @@ static struct fuse_operations fusefm_oper = {
           NSDictionary* userInfo =
             [NSDictionary dictionaryWithObjectsAndKeys:
              description, NSLocalizedDescriptionKey,
-             nil, nil];
+             nil];
           NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
                                                code:GMUserFileSystem_ERROR_UNMOUNT_DEADFS_RMDIR
                                            userInfo:userInfo];
@@ -2429,7 +2433,7 @@ static struct fuse_operations fusefm_oper = {
     NSDictionary* userInfo =
     [NSDictionary dictionaryWithObjectsAndKeys:
      description, NSLocalizedDescriptionKey,
-     nil, nil];
+     nil];
     NSError* error = [NSError errorWithDomain:kGMUserFileSystemErrorDomain
                                          code:GMUserFileSystem_ERROR_MOUNT_FUSE_MAIN_INTERNAL
                                      userInfo:userInfo];
