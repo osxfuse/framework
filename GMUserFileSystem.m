@@ -147,10 +147,10 @@ typedef enum {
   BOOL supportsExtendedTimes_;      // Delegate supports create and backup times?
   BOOL supportsSetVolumeName_;      // Delegate supports setvolname?
   BOOL isReadOnly_;                 // Is this mounted read-only?
-  id delegate_;
+  id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol> delegate_;
 }
-- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
-- (void)setDelegate:(id)delegate;
+- (id)initWithDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate isThreadSafe:(BOOL)isThreadSafe;
+- (void)setDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate;
 @end
 
 @implementation GMUserFileSystemInternal

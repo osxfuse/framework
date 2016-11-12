@@ -55,6 +55,9 @@
 #define GM_EXPORT __attribute__((visibility("default")))
 
 @class GMUserFileSystemInternal;
+@protocol GMUserFileSystemLifecycleProtocol;
+@protocol GMUserFileSystemOperationsProtocol;
+@protocol GMUserFileSystemResourceForksProtocol;
 
 /*!
  * @class
@@ -109,19 +112,19 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  * @param isThreadSafe Is the file system delegate thread safe?
  * @result A GMUserFileSystem instance.
  */
-- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe GM_AVAILABLE(2_0);
+- (id)initWithDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate isThreadSafe:(BOOL)isThreadSafe GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Set the file system delegate.
  * @param delegate The delegate to use from now on for this file system.
  */
-- (void)setDelegate:(id)delegate GM_AVAILABLE(2_0);
+- (void)setDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate GM_AVAILABLE(2_0);
 
 /*! 
  * @abstract Get the file system delegate.
  * @result The file system delegate.
  */
-- (id)delegate;
+- (id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate;
 
 /*!
  * @abstract Mount the file system at the given path.
@@ -235,7 +238,7 @@ extern NSString* const kGMUserFileSystemDidUnmount GM_AVAILABLE(2_0);
  * @discussion Optional delegate operations that get called as part of a file 
  * system's life cycle.
  */
-@interface NSObject (GMUserFileSystemLifecycle)
+@protocol GMUserFileSystemLifecycleProtocol
 
 /*! @abstract Called just before the mount of the file system occurs. */
 - (void)willMount GM_AVAILABLE(2_0);
@@ -264,7 +267,7 @@ extern NSString* const kGMUserFileSystemDidUnmount GM_AVAILABLE(2_0);
  * of these methods are implemented. However, you can safely skip hard-links, 
  * symbolic links, and extended attributes.
  */
-@interface NSObject (GMUserFileSystemOperations)
+@protocol GMUserFileSystemOperationsProtocol
 
 #pragma mark Directory Contents
 
@@ -678,7 +681,7 @@ extern NSString* const kGMUserFileSystemDidUnmount GM_AVAILABLE(2_0);
  * are provided via extended attributes while in 10.4 we use "._" files. 
  * Typically, it only makes sense to use these for a read-only file system.
  */
-@interface NSObject (GMUserFileSystemResourceForks)
+@protocol GMUserFileSystemResourceForksProtocol
 
 /*!
  * @abstract Returns FinderInfo attributes at the specified path.
