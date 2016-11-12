@@ -225,7 +225,7 @@ typedef enum {
 // Deprecated delegate methods that we still support for backward compatibility
 // with previously compiled file systems. This will be actively trimmed as
 // new releases occur.
-@interface NSObject (GMUserFileSystemDeprecated)
+@protocol GMUserFileSystemDeprecatedProtocol
 
 - (BOOL)createFileAtPath:(NSString *)path
               attributes:(NSDictionary *)attributes
