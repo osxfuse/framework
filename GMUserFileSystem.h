@@ -166,6 +166,8 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  */
 - (void)unmount GM_AVAILABLE(2_0);
 
++ (pid_t *)contextPid;
+
 @end
 
 #pragma mark Operation Context
