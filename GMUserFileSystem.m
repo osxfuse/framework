@@ -344,7 +344,6 @@ typedef enum {
     detachNewThread:(BOOL)detachNewThread {
   [internal_ setMountPath:mountPath];
   NSMutableArray* optionsCopy = [NSMutableArray array];
-  BOOL hasIcon = NO;
   for (int i = 0; i < [options count]; ++i) {
     NSString* option = [options objectAtIndex:i];
     NSString* optionLowercase = [option lowercaseString];
@@ -352,21 +351,7 @@ typedef enum {
         [optionLowercase compare:@"ro"] == NSOrderedSame) {
       [internal_ setIsReadOnly:YES];
     }
-    hasIcon = hasIcon ||
-              [optionLowercase hasPrefix:@"volicon="] ||
-              [optionLowercase hasPrefix:@"iconpath="];
     [optionsCopy addObject:[[option copy] autorelease]];
-  }
-  if (!hasIcon) {
-    NSBundle* framework = [NSBundle bundleForClass:[GMUserFileSystem class]];
-    NSString* voliconPath = [framework pathForResource:@"DefaultVolumeIcon"
-                                                ofType:@"icns"];
-    NSFileManager* fileManager = [[NSFileManager alloc] init];
-    if ([fileManager fileExistsAtPath:voliconPath]) {
-      [optionsCopy addObject:[NSString stringWithFormat:@"volicon=%@",
-                              voliconPath]];
-    }
-    [fileManager release];
   }
   NSDictionary* args = 
   [[NSDictionary alloc] initWithObjectsAndKeys:
