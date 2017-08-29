@@ -262,9 +262,9 @@ typedef enum {
                forPath:(NSString *)path
               userData:(id)userData
                  error:(NSError **)error;
-- (BOOL)fillStatvfsBuffer:(struct statvfs *)stbuf 
-                  forPath:(NSString *)path
-                    error:(NSError **)error;
+- (BOOL)fillStatfsBuffer:(struct statfs *)stbuf
+                 forPath:(NSString *)path
+                   error:(NSError **)error;
 
 - (void)fuseInit;
 - (void)fuseDestroy;
@@ -646,44 +646,40 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 
 #pragma mark Internal Stat Operations
 
-- (BOOL)fillStatvfsBuffer:(struct statvfs *)stbuf 
-                  forPath:(NSString *)path 
-                    error:(NSError **)error {
+- (BOOL)fillStatfsBuffer:(struct statfs *)stbuf
+                 forPath:(NSString *)path
+                   error:(NSError **)error {
   NSDictionary* attributes = [self attributesOfFileSystemForPath:path error:error];
   if (!attributes) {
     return NO;
   }
   
-  // Maximum length of filenames
-  NSNumber* namemax = [attributes objectForKey:kGMUserFileSystemVolumeMaxFilenameLengthKey];
-  assert(namemax);
-  stbuf->f_namemax = [namemax unsignedLongValue];
-  
   // Block size
   NSNumber* blocksize = [attributes objectForKey:kGMUserFileSystemVolumeFileSystemBlockSizeKey];
   assert(blocksize);
-  stbuf->f_bsize = stbuf->f_frsize = [blocksize unsignedLongValue];
+  stbuf->f_bsize = (uint32_t)[blocksize unsignedIntValue];
+  stbuf->f_iosize = (int32_t)[blocksize intValue];
   
   // Size in blocks
   NSNumber* size = [attributes objectForKey:NSFileSystemSize];
   assert(size);
-  stbuf->f_blocks = (fsblkcnt_t)([size longLongValue] / stbuf->f_frsize);
+  stbuf->f_blocks = (uint64_t)([size unsignedLongLongValue] / stbuf->f_bsize);
   
   // Number of free / available blocks
   NSNumber* freeSize = [attributes objectForKey:NSFileSystemFreeSize];
   assert(freeSize);
-  stbuf->f_bfree = stbuf->f_bavail = 
-    (fsblkcnt_t)([freeSize longLongValue] / stbuf->f_frsize);
+  stbuf->f_bavail = stbuf->f_bfree =
+    (uint64_t)([freeSize unsignedLongLongValue] / stbuf->f_bsize);
   
   // Number of nodes
   NSNumber* numNodes = [attributes objectForKey:NSFileSystemNodes];
   assert(numNodes);
-  stbuf->f_files = (fsfilcnt_t)[numNodes longLongValue];
+  stbuf->f_files = (uint64_t)[numNodes unsignedLongLongValue];
   
   // Number of free / available nodes
   NSNumber* freeNodes = [attributes objectForKey:NSFileSystemFreeNodes];
   assert(freeNodes);
-  stbuf->f_ffree = stbuf->f_favail = (fsfilcnt_t)[freeNodes longLongValue];
+  stbuf->f_ffree = (uint64_t)[freeNodes unsignedLongLongValue];
   
   return YES;
 }
@@ -1894,16 +1890,16 @@ static int fusefm_exchange(const char* p1, const char* p2, unsigned long opts) {
   return ret;  
 }
 
-static int fusefm_statfs(const char* path, struct statvfs* stbuf) {
+static int fusefm_statfs_x(const char* path, struct statfs* stbuf) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOENT;
   @try {
-    memset(stbuf, 0, sizeof(struct statvfs));
+    memset(stbuf, 0, sizeof(struct statfs));
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs fillStatvfsBuffer:stbuf 
-                      forPath:[NSString stringWithUTF8String:path]
-                        error:&error]) {
+    if ([fs fillStatfsBuffer:stbuf
+                     forPath:[NSString stringWithUTF8String:path]
+                       error:&error]) {
       ret = 0;
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -2227,7 +2223,7 @@ static struct fuse_operations fusefm_oper = {
   .exchange = fusefm_exchange,
   
   // Getting and Setting Attributes
-  .statfs = fusefm_statfs,
+  .statfs_x = fusefm_statfs_x,
   .setvolname = fusefm_setvolname,
   .getattr = fusefm_getattr,
   .fgetattr = fusefm_fgetattr,
