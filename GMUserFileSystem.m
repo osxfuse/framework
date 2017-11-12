@@ -3,7 +3,7 @@
 //  OSXFUSE
 //
 
-//  Copyright (c) 2011-2016 Benjamin Fleischer.
+//  Copyright (c) 2011-2017 Benjamin Fleischer.
 //  All rights reserved.
 
 //  OSXFUSE.framework is based on MacFUSE.framework. MacFUSE.framework is
@@ -137,6 +137,7 @@ typedef enum {
 } GMUserFileSystemStatus;
 
 @interface GMUserFileSystemInternal : NSObject {
+  struct fuse* handle_;
   NSString* mountPath_;
   GMUserFileSystemStatus status_;
   BOOL shouldCheckForResource_;     // Try to handle FinderInfo/Resource Forks?
@@ -179,6 +180,8 @@ typedef enum {
   [super dealloc];
 }
 
+- (struct fuse*)handle { return handle_; }
+- (void)setHandle:(struct fuse *)handle { handle_ = handle; }
 - (NSString *)mountPath { return mountPath_; }
 - (void)setMountPath:(NSString *)mountPath {
   [mountPath_ autorelease];
@@ -376,6 +379,32 @@ typedef enum {
   }
 }
 
+- (BOOL)invalidateItemAtPath:(NSString *)path error:(NSError **)error {
+  int ret = -ENOTCONN;
+
+  struct fuse* handle = [internal_ handle];
+  if (handle) {
+    ret = fuse_invalidate_path(handle, [path fileSystemRepresentation]);
+    
+    // Note: fuse_invalidate_path() may return -ENOENT to indicate that there
+    // was no entry to be invalidated, e.g., because the path has not been seen
+    // before or has been forgotten. This should not be considered to be an
+    // error.
+    if (ret == -ENOENT) {
+      ret = 0;
+    }
+  }
+
+  if (ret != 0) {
+    if (error) {
+      *error = [GMUserFileSystem errorWithCode:-ret];
+    }
+    return NO;
+  }
+
+  return YES;
+}
+
 + (NSError *)errorWithCode:(int)code {
   return [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
 }
@@ -420,6 +449,9 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 }
 
 - (void)fuseInit {
+  struct fuse_context* context = fuse_get_context();
+
+  [internal_ setHandle:context->fuse];
   [internal_ setStatus:GMUserFileSystem_INITIALIZING];
 
   NSError* error = nil;
@@ -458,7 +490,6 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   // back through the kernel after this routine returns. In order to post
   // the kGMUserFileSystemDidMount notification we start a new thread that will
   // poll until it is mounted.
-  struct fuse_context* context = fuse_get_context();
   struct fuse_session* se = fuse_get_session(context->fuse);
   struct fuse_chan* chan = fuse_session_next_chan(se, NULL);
   int fd = fuse_chan_fd(chan);
@@ -1732,7 +1763,7 @@ static int fusefm_readlink(const char *path, char *buf, size_t size)
 }
 
 static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                          off_t offset, struct fuse_file_info *fi) {
+                          off_t offset, struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOENT;
 
@@ -1758,7 +1789,7 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   return ret;
 }
 
-static int fusefm_open(const char *path, struct fuse_file_info *fi) {
+static int fusefm_open(const char *path, struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOENT;  // TODO: Default to 0 (success) since a file-system does
                       // not necessarily need to implement open?
@@ -1785,7 +1816,7 @@ static int fusefm_open(const char *path, struct fuse_file_info *fi) {
   return ret;
 }
 
-static int fusefm_release(const char *path, struct fuse_file_info *fi) {
+static int fusefm_release(const char *path, struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   @try {
     id userData = (id)(uintptr_t)fi->fh;
@@ -1801,7 +1832,7 @@ static int fusefm_release(const char *path, struct fuse_file_info *fi) {
 }
 
 static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
-                       struct fuse_file_info *fi) {
+                       struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -EIO;
 
@@ -1931,7 +1962,7 @@ static int fusefm_setvolname(const char* name) {
 }
 
 static int fusefm_fgetattr(const char *path, struct stat *stbuf, 
-                           struct fuse_file_info *fi) {
+                           struct fuse_file_info* fi) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   int ret = -ENOENT;
   @try {
@@ -2267,14 +2298,14 @@ static struct fuse_operations fusefm_oper = {
   // Maybe there is a dead FUSE file system stuck on our mount point?
   struct statfs statfs_buf;
   memset(&statfs_buf, 0, sizeof(statfs_buf));
-  int rc = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
-  if (rc == 0) {
+  int ret = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
+  if (ret == 0) {
     if (statfs_buf.f_fssubtype == (short)(-1)) {
       // We use a special indicator value from FUSE in the f_fssubtype field to
       // indicate that the currently mounted filesystem is dead. It probably
       // crashed and was never unmounted.
-      rc = unmount([[internal_ mountPath] UTF8String], 0);
-      if (rc != 0) {
+      ret = unmount([[internal_ mountPath] UTF8String], 0);
+      if (ret != 0) {
         NSString* description = @"Unable to unmount an existing 'dead' filesystem.";
         NSDictionary* userInfo =
           [NSDictionary dictionaryWithObjectsAndKeys:
@@ -2299,8 +2330,8 @@ static struct fuse_operations fusefm_oper = {
         struct stat stat_buf;
         for (int i = 0; i < 2 * kWaitForDeadFSTimeoutSeconds; ++i) {
           usleep(500000);  // .5 seconds
-          rc = stat([[internal_ mountPath] UTF8String], &stat_buf);
-          if (rc != 0 && errno == ENOENT) {
+          ret = stat([[internal_ mountPath] UTF8String], &stat_buf);
+          if (ret != 0 && errno == ENOENT) {
             isDirectoryRemoved = YES;
             break;
           }
@@ -2327,9 +2358,9 @@ static struct fuse_operations fusefm_oper = {
   // Check mount path as necessary.
   struct stat stat_buf;
   memset(&stat_buf, 0, sizeof(stat_buf));
-  rc = stat([[internal_ mountPath] UTF8String], &stat_buf);
-  if ((rc == 0 && !S_ISDIR(stat_buf.st_mode)) ||
-      (rc != 0 && errno == ENOTDIR)) {
+  ret = stat([[internal_ mountPath] UTF8String], &stat_buf);
+  if ((ret == 0 && !S_ISDIR(stat_buf.st_mode)) ||
+      (ret != 0 && errno == ENOTDIR)) {
     [self postMountError:[GMUserFileSystem errorWithCode:ENOTDIR]];
     [pool release];
     return;
@@ -2373,7 +2404,7 @@ static struct fuse_operations fusefm_oper = {
     [[internal_ delegate] willMount];
   }
   [pool release];
-  int ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
+  ret = fuse_main(argc, (char **)argv, &fusefm_oper, self);
 
   pool = [[NSAutoreleasePool alloc] init];
 

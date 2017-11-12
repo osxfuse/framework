@@ -3,7 +3,7 @@
 //  OSXFUSE
 //
 
-//  Copyright (c) 2011-2016 Benjamin Fleischer.
+//  Copyright (c) 2011-2017 Benjamin Fleischer.
 //  All rights reserved.
 
 //  OSXFUSE.framework is based on MacFUSE.framework. MacFUSE.framework is
@@ -165,6 +165,17 @@ GM_EXPORT @interface GMUserFileSystem : NSObject {
  * notification will be posted.
  */
 - (void)unmount GM_AVAILABLE(2_0);
+
+/*!
+ * @abstract Invalidate caches and post file system event.
+ * @discussion Invalidate caches for the specified path and post a file system
+ * event to notify subscribed processes, e.g. Finder, of remote file changes.
+ * @param path The path to the specified file.
+ * @param error Should be filled with a POSIX error in case of failure.
+ * @result YES if the caches were successfully invalidated.
+ */
+- (BOOL)invalidateItemAtPath:(NSString *)path
+                       error:(NSError **)error GM_AVAILABLE(3_8);
 
 @end
 
