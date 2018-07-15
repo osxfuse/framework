@@ -148,10 +148,10 @@ typedef enum {
   BOOL supportsExtendedTimes_;      // Delegate supports create and backup times?
   BOOL supportsSetVolumeName_;      // Delegate supports setvolname?
   BOOL isReadOnly_;                 // Is this mounted read-only?
-  id delegate_;
+  id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol> delegate_;
 }
-- (id)initWithDelegate:(id)delegate isThreadSafe:(BOOL)isThreadSafe;
-- (void)setDelegate:(id)delegate;
+- (id)initWithDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate isThreadSafe:(BOOL)isThreadSafe;
+- (void)setDelegate:(id <GMUserFileSystemLifecycleProtocol, GMUserFileSystemOperationsProtocol, GMUserFileSystemResourceForksProtocol>)delegate;
 @end
 
 @implementation GMUserFileSystemInternal
@@ -228,7 +228,7 @@ typedef enum {
 // Deprecated delegate methods that we still support for backward compatibility
 // with previously compiled file systems. This will be actively trimmed as
 // new releases occur.
-@interface NSObject (GMUserFileSystemDeprecated)
+@protocol GMUserFileSystemDeprecatedProtocol
 
 - (BOOL)createFileAtPath:(NSString *)path
               attributes:(NSDictionary *)attributes
