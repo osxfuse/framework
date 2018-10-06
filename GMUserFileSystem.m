@@ -1778,7 +1778,7 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
       filler(buf, ".", NULL, 0);
       filler(buf, "..", NULL, 0);
       for (int i = 0, count = [contents count]; i < count; i++) {
-        filler(buf, [[contents objectAtIndex:i] UTF8String], NULL, 0);
+        filler(buf, [[contents objectAtIndex:i] fileSystemRepresentation], NULL, 0);
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
