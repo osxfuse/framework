@@ -4,6 +4,7 @@
 //
 
 //  Copyright (c) 2011-2017 Benjamin Fleischer.
+//  Copyright (c) 2018 Syncplicity by Axway
 //  All rights reserved.
 
 //  OSXFUSE.framework is based on MacFUSE.framework. MacFUSE.framework is
@@ -135,6 +136,16 @@ typedef enum {
   GMUserFileSystem_UNMOUNTING,      // In the process of unmounting.
   GMUserFileSystem_FAILURE,         // Failed state; probably a mount failure.
 } GMUserFileSystemStatus;
+
+// Helper functions to convert paths properly to/from NSString
+static inline NSString* stringFromPath(const char* path) {
+    return path ? [[NSFileManager defaultManager] stringWithFileSystemRepresentation: path length: strlen(path)] : nil;
+}
+
+static inline const char* pathFromString(NSString* str) {
+    return [str fileSystemRepresentation];
+}
+
 
 @interface GMUserFileSystemInternal : NSObject {
   struct fuse* handle_;
@@ -1596,7 +1607,7 @@ static int fusefm_mkdir(const char* path, mode_t mode) {
       [NSDictionary dictionaryWithObject:[NSNumber numberWithLong:perm]
                                   forKey:NSFilePosixPermissions];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs createDirectoryAtPath:[NSString stringWithUTF8String:path] 
+    if ([fs createDirectoryAtPath:stringFromPath(path)
                        attributes:attribs
                             error:&error]) {
       ret = 0;  // Success!
@@ -1623,7 +1634,7 @@ static int fusefm_create(const char* path, mode_t mode, struct fuse_file_info* f
       [NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:perms]
                                   forKey:NSFilePosixPermissions];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs createFileAtPath:[NSString stringWithUTF8String:path]
+    if ([fs createFileAtPath:stringFromPath(path)
                   attributes:attribs
                        flags:fi->flags
                     userData:&userData
@@ -1649,7 +1660,7 @@ static int fusefm_rmdir(const char* path) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs removeDirectoryAtPath:[NSString stringWithUTF8String:path] 
+    if ([fs removeDirectoryAtPath:stringFromPath(path) 
                             error:&error]) {
       ret = 0;  // Success!
     } else {
@@ -1667,7 +1678,7 @@ static int fusefm_unlink(const char* path) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs removeItemAtPath:[NSString stringWithUTF8String:path] 
+    if ([fs removeItemAtPath:stringFromPath(path) 
                        error:&error]) {
       ret = 0;  // Success!
     } else {
@@ -1684,8 +1695,8 @@ static int fusefm_rename(const char* path, const char* toPath) {
   int ret = -EACCES;
 
   @try {
-    NSString* source = [NSString stringWithUTF8String:path];
-    NSString* destination = [NSString stringWithUTF8String:toPath];
+    NSString* source = stringFromPath(path);
+    NSString* destination = stringFromPath(toPath);
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs moveItemAtPath:source toPath:destination error:&error]) {
@@ -1706,8 +1717,8 @@ static int fusefm_link(const char* path1, const char* path2) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs linkItemAtPath:[NSString stringWithUTF8String:path1]
-                    toPath:[NSString stringWithUTF8String:path2]
+    if ([fs linkItemAtPath:stringFromPath(path1)
+                    toPath:stringFromPath(path2)
                      error:&error]) {
       ret = 0;  // Success!
     } else {
@@ -1726,8 +1737,8 @@ static int fusefm_symlink(const char* path1, const char* path2) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs createSymbolicLinkAtPath:[NSString stringWithUTF8String:path2]
-                 withDestinationPath:[NSString stringWithUTF8String:path1]
+    if ([fs createSymbolicLinkAtPath:stringFromPath(path2)
+                 withDestinationPath:stringFromPath(path1)
                        error:&error]) {
       ret = 0;  // Success!
     } else {
@@ -1745,7 +1756,7 @@ static int fusefm_readlink(const char *path, char *buf, size_t size)
   int ret = -ENOENT;
 
   @try {
-    NSString* linkPath = [NSString stringWithUTF8String:path];
+    NSString* linkPath = stringFromPath(path);
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSString *pathContent = [fs destinationOfSymbolicLinkAtPath:linkPath
@@ -1771,14 +1782,14 @@ static int fusefm_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSArray *contents = 
-    [fs contentsOfDirectoryAtPath:[NSString stringWithUTF8String:path] 
+    [fs contentsOfDirectoryAtPath:stringFromPath(path) 
                             error:&error];
     if (contents) {
       ret = 0;
       filler(buf, ".", NULL, 0);
       filler(buf, "..", NULL, 0);
       for (int i = 0, count = [contents count]; i < count; i++) {
-        filler(buf, [[contents objectAtIndex:i] UTF8String], NULL, 0);
+        filler(buf, pathFromString([contents objectAtIndex:i]), NULL, 0);
       }
     } else {
       MAYBE_USE_ERROR(ret, error);
@@ -1798,7 +1809,7 @@ static int fusefm_open(const char *path, struct fuse_file_info* fi) {
     id userData = nil;
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs openFileAtPath:[NSString stringWithUTF8String:path]
+    if ([fs openFileAtPath:stringFromPath(path)
                       mode:fi->flags
                   userData:&userData
                      error:&error]) {
@@ -1821,7 +1832,7 @@ static int fusefm_release(const char *path, struct fuse_file_info* fi) {
   @try {
     id userData = (id)(uintptr_t)fi->fh;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    [fs releaseFileAtPath:[NSString stringWithUTF8String:path] userData:userData];
+    [fs releaseFileAtPath:stringFromPath(path) userData:userData];
     if (userData) {
       [userData release]; 
     }
@@ -1839,7 +1850,7 @@ static int fusefm_read(const char *path, char *buf, size_t size, off_t offset,
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    ret = [fs readFileAtPath:[NSString stringWithUTF8String:path]
+    ret = [fs readFileAtPath:stringFromPath(path)
                     userData:(id)(uintptr_t)fi->fh
                       buffer:buf
                         size:size
@@ -1860,7 +1871,7 @@ static int fusefm_write(const char* path, const char* buf, size_t size,
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    ret = [fs writeFileAtPath:[NSString stringWithUTF8String:path]
+    ret = [fs writeFileAtPath:stringFromPath(path)
                      userData:(id)(uintptr_t)fi->fh
                        buffer:buf
                          size:size
@@ -1886,7 +1897,7 @@ static int fusefm_fallocate(const char* path, int mode, off_t offset, off_t leng
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs allocateFileAtPath:[NSString stringWithUTF8String:path]
+    if ([fs allocateFileAtPath:stringFromPath(path)
                       userData:(fi ? (id)(uintptr_t)fi->fh : nil)
                        options:mode
                         offset:offset
@@ -1908,8 +1919,8 @@ static int fusefm_exchange(const char* p1, const char* p2, unsigned long opts) {
   @try {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
-    if ([fs exchangeDataOfItemAtPath:[NSString stringWithUTF8String:p1]
-                      withItemAtPath:[NSString stringWithUTF8String:p2]
+    if ([fs exchangeDataOfItemAtPath:stringFromPath(p1)
+                      withItemAtPath:stringFromPath(p2)
                                error:&error]) {
       ret = 0;
     } else {
@@ -1929,7 +1940,7 @@ static int fusefm_statfs_x(const char* path, struct statfs* stbuf) {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs fillStatfsBuffer:stbuf
-                     forPath:[NSString stringWithUTF8String:path]
+                     forPath:stringFromPath(path)
                        error:&error]) {
       ret = 0;
     } else {
@@ -1947,7 +1958,7 @@ static int fusefm_setvolname(const char* name) {
   @try {
     NSError* error = nil;
     NSDictionary* attribs = 
-      [NSDictionary dictionaryWithObject:[NSString stringWithUTF8String:name]
+      [NSDictionary dictionaryWithObject:stringFromPath(name)
                                   forKey:kGMUserFileSystemVolumeNameKey];
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs ofFileSystemAtPath:@"/" error:&error]) {
@@ -1971,7 +1982,7 @@ static int fusefm_fgetattr(const char *path, struct stat *stbuf,
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     id userData = fi ? (id)(uintptr_t)fi->fh : nil;
     if ([fs fillStatBuffer:stbuf 
-                   forPath:[NSString stringWithUTF8String:path]
+                   forPath:stringFromPath(path)
                   userData:userData
                      error:&error]) {
       ret = 0;
@@ -1997,7 +2008,7 @@ static int fusefm_getxtimes(const char* path, struct timespec* bkuptime,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSDictionary* attribs = 
-      [fs extendedTimesOfItemAtPath:[NSString stringWithUTF8String:path]
+      [fs extendedTimesOfItemAtPath:stringFromPath(path)
                            userData:nil  // TODO: Maybe this should support FH?
                               error:&error];
     if (attribs) {
@@ -2095,7 +2106,7 @@ static int fusefm_fsetattr_x(const char* path, struct setattr_x* attrs,
     NSDictionary* attribs = dictionaryWithAttributes(attrs);
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setAttributes:attribs 
-             ofItemAtPath:[NSString stringWithUTF8String:path]
+             ofItemAtPath:stringFromPath(path)
                  userData:(fi ? (id)(uintptr_t)fi->fh : nil)
                     error:&error]) {
       ret = 0;
@@ -2120,7 +2131,7 @@ static int fusefm_listxattr(const char *path, char *list, size_t size)
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSArray* attributeNames =
-      [fs extendedAttributesOfItemAtPath:[NSString stringWithUTF8String:path]
+      [fs extendedAttributesOfItemAtPath:stringFromPath(path)
                                    error:&error];
     if (attributeNames != nil) {
       char zero = 0;
@@ -2154,7 +2165,7 @@ static int fusefm_getxattr(const char *path, const char *name, char *value,
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     NSData *data = [fs valueOfExtendedAttribute:[NSString stringWithUTF8String:name]
-                                   ofItemAtPath:[NSString stringWithUTF8String:path]
+                                   ofItemAtPath:stringFromPath(path)
                                        position:position
                                           error:&error];
     if (data != nil) {
@@ -2183,7 +2194,7 @@ static int fusefm_setxattr(const char *path, const char *name, const char *value
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs setExtendedAttribute:[NSString stringWithUTF8String:name]
-                    ofItemAtPath:[NSString stringWithUTF8String:path]
+                    ofItemAtPath:stringFromPath(path)
                            value:[NSData dataWithBytes:value length:size]
                         position:position
                          options:flags
@@ -2205,7 +2216,7 @@ static int fusefm_removexattr(const char *path, const char *name) {
     NSError* error = nil;
     GMUserFileSystem* fs = [GMUserFileSystem currentFS];
     if ([fs removeExtendedAttribute:[NSString stringWithUTF8String:name]
-                    ofItemAtPath:[NSString stringWithUTF8String:path]
+                    ofItemAtPath:stringFromPath(path)
                            error:&error]) {
       ret = 0;
     } else {
@@ -2298,13 +2309,13 @@ static struct fuse_operations fusefm_oper = {
   // Maybe there is a dead FUSE file system stuck on our mount point?
   struct statfs statfs_buf;
   memset(&statfs_buf, 0, sizeof(statfs_buf));
-  int ret = statfs([[internal_ mountPath] UTF8String], &statfs_buf);
+  int ret = statfs(pathFromString([internal_ mountPath]), &statfs_buf);
   if (ret == 0) {
     if (statfs_buf.f_fssubtype == (short)(-1)) {
       // We use a special indicator value from FUSE in the f_fssubtype field to
       // indicate that the currently mounted filesystem is dead. It probably
       // crashed and was never unmounted.
-      ret = unmount([[internal_ mountPath] UTF8String], 0);
+      ret = unmount(pathFromString([internal_ mountPath]), 0);
       if (ret != 0) {
         NSString* description = @"Unable to unmount an existing 'dead' filesystem.";
         NSDictionary* userInfo =
@@ -2330,7 +2341,7 @@ static struct fuse_operations fusefm_oper = {
         struct stat stat_buf;
         for (int i = 0; i < 2 * kWaitForDeadFSTimeoutSeconds; ++i) {
           usleep(500000);  // .5 seconds
-          ret = stat([[internal_ mountPath] UTF8String], &stat_buf);
+          ret = stat(pathFromString([internal_ mountPath]), &stat_buf);
           if (ret != 0 && errno == ENOENT) {
             isDirectoryRemoved = YES;
             break;
